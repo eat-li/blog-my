@@ -1,0 +1,573 @@
+<script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useBlogStore } from '../../stores/blog'
+import { postApi, uploadApi } from '../../api'
+import { useEditor, EditorContent } from '@tiptap/vue-3'
+import StarterKit from '@tiptap/starter-kit'
+import ImageExtension from '@tiptap/extension-image'
+import LinkExtension from '@tiptap/extension-link'
+import PlaceholderExtension from '@tiptap/extension-placeholder'
+import UnderlineExtension from '@tiptap/extension-underline'
+
+const router = useRouter()
+const route = useRoute()
+const blog = useBlogStore()
+const isEdit = !!route.params.id
+
+const form = ref({
+  type: 'article',
+  title: '',
+  summary: '',
+  content: '',
+  cover_image: '',
+  category_id: null,
+  rating: null,
+  status: 'draft',
+  tags: [],
+  metadata: { writing_note: { mood: '', bgm: '', weather: '', note: '' } },
+})
+
+const saving = ref(false)
+const showWritingNote = ref(false)
+const error = ref('')
+
+// Load categories and tags
+onMounted(async () => {
+  await Promise.all([blog.fetchCategories(), blog.fetchTags()])
+  if (isEdit) {
+    try {
+      const res = await postApi.detail(route.params.id)
+      const post = res.post || res
+      form.value = {
+        type: post.type,
+        title: post.title,
+        summary: post.summary || '',
+        content: post.content,
+        cover_image: post.cover_image || '',
+        category_id: post.category_id,
+        rating: post.rating,
+        status: post.status,
+        tags: post.tags?.map(t => t.id) || [],
+        metadata: post.metadata || { writing_note: { mood: '', bgm: '', weather: '', note: '' } },
+      }
+      editor.value?.commands.setContent(post.content)
+    } catch (e) {
+      if (e.response?.status === 401) router.push('/admin/login')
+      else error.value = '加载失败'
+    }
+  }
+})
+
+const uploadingImage = ref(false)
+
+// 粘贴图片时自动上传
+async function handlePasteImage(file) {
+  if (!file || !file.type?.startsWith('image/')) return
+
+  uploadingImage.value = true
+  try {
+    // 转 base64
+    const buffer = await file.arrayBuffer()
+    const bytes = new Uint8Array(buffer)
+    let binary = ''
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+    const base64 = btoa(binary)
+
+    const res = await uploadApi.image({ base64, filename: file.name || 'paste.png' })
+    const url = res.url
+
+    // 插入编辑器
+    editor.value?.chain().focus().setImage({ src: url }).run()
+  } catch (e) {
+    console.error('图片上传失败:', e)
+    alert('图片上传失败，请重试')
+  } finally {
+    uploadingImage.value = false
+  }
+}
+
+// Tiptap editor
+const editor = useEditor({
+  content: form.value.content,
+  extensions: [
+    StarterKit.configure({
+      heading: { levels: [1, 2, 3] },
+    }),
+    ImageExtension.configure({ inline: true }),
+    LinkExtension.configure({ openOnClick: false }),
+    PlaceholderExtension.configure({ placeholder: '开始写吧…' }),
+    UnderlineExtension,
+  ],
+  onUpdate: ({ editor }) => { form.value.content = editor.getHTML() },
+  onCreate: ({ editor }) => {
+    const dom = editor.view.dom
+    // 粘贴图片
+    dom.addEventListener('paste', (event) => {
+      const items = event.clipboardData?.items
+      if (!items) return
+      for (const item of items) {
+        if (item.type?.startsWith('image/')) {
+          event.preventDefault()
+          handlePasteImage(item.getAsFile())
+          return
+        }
+      }
+    })
+    // 拖拽图片
+    dom.addEventListener('dragover', (e) => { e.preventDefault() })
+    dom.addEventListener('drop', (e) => {
+      const file = e.dataTransfer?.files?.[0]
+      if (file?.type?.startsWith('image/')) {
+        e.preventDefault()
+        handlePasteImage(file)
+      }
+    })
+  },
+})
+
+// Watch type change
+const typeOptions = [
+  { value: 'article', label: '文章', icon: '✎', color: 'var(--color-accent-article)' },
+  { value: 'anime', label: '动漫', icon: '◉', color: 'var(--color-accent-anime)' },
+  { value: 'galgame', label: 'Galgame', icon: '◈', color: 'var(--color-accent-galgame)' },
+]
+
+function setType(type) {
+  form.value.type = type
+  if (type !== 'article') form.value.category_id = null
+  if (type === 'article') form.value.rating = null
+}
+
+// Save
+async function handleSave(publish = false) {
+  if (!form.value.title) { error.value = '请填写标题'; return }
+  if (!form.value.content?.trim() && !editor.value?.getHTML()?.trim()) { error.value = '请填写内容'; return }
+
+  error.value = ''
+  saving.value = true
+  try {
+    const data = { ...form.value, content: editor.value?.getHTML() || form.value.content }
+    if (publish) data.status = 'published'
+    else if (!form.value.status) data.status = 'draft'
+
+    if (isEdit) {
+      await postApi.update(route.params.id, data)
+    } else {
+      await postApi.create(data)
+    }
+    router.push('/admin/posts')
+  } catch (e) {
+    error.value = e.response?.data?.message || '保存失败'
+  } finally {
+    saving.value = false
+  }
+}
+
+const fileInput = ref(null)
+
+// Toolbar actions
+function addImage() {
+  // 弹出菜单：粘贴 URL 或选文件
+  const choice = confirm('点「确定」输入图片 URL，点「取消」选择文件上传')
+  if (choice) {
+    const url = prompt('输入图片 URL:')
+    if (url && editor.value) {
+      editor.value.chain().focus().setImage({ src: url }).run()
+    }
+  } else {
+    fileInput.value?.click()
+  }
+}
+
+function onFileSelected(e) {
+  const file = e.target.files?.[0]
+  if (file) handlePasteImage(file)
+  e.target.value = '' // 重置以允许再次选择同一文件
+}
+
+function addLink() {
+  const url = prompt('输入链接 URL:')
+  if (url && editor.value) {
+    editor.value.chain().focus().setLink({ href: url }).run()
+  }
+}
+</script>
+
+<template>
+  <div class="post-editor">
+    <!-- 类型选择 -->
+    <div class="pe-type-select">
+      <button
+        v-for="opt in typeOptions"
+        :key="opt.value"
+        class="type-btn glass-btn"
+        :class="{ 'type-btn--active': form.type === opt.value }"
+        :style="{ '--accent': opt.color }"
+        @click="setType(opt.value)"
+      >
+        {{ opt.icon }} {{ opt.label }}
+      </button>
+    </div>
+
+    <!-- 标题 -->
+    <input
+      v-model="form.title"
+      class="glass-input pe-title"
+      placeholder="标题"
+    />
+
+    <!-- 摘要 -->
+    <textarea
+      v-model="form.summary"
+      class="glass-input pe-summary"
+      placeholder="摘要（可选）"
+      rows="2"
+    ></textarea>
+
+    <!-- Tiptap 工具栏 -->
+    <div class="pe-toolbar glass-card" v-if="editor">
+      <button class="tb-btn" @click="editor.chain().focus().toggleBold().run()" :class="{ 'tb-btn--active': editor.isActive('bold') }" title="加粗"><strong>B</strong></button>
+      <button class="tb-btn" @click="editor.chain().focus().toggleItalic().run()" :class="{ 'tb-btn--active': editor.isActive('italic') }" title="斜体"><em>I</em></button>
+      <button class="tb-btn" @click="editor.chain().focus().toggleUnderline().run()" :class="{ 'tb-btn--active': editor.isActive('underline') }" title="下划线"><u>U</u></button>
+      <span class="tb-sep" />
+      <button class="tb-btn" @click="editor.chain().focus().toggleHeading({ level: 1 }).run()" :class="{ 'tb-btn--active': editor.isActive('heading', { level: 1 }) }" title="标题1">H1</button>
+      <button class="tb-btn" @click="editor.chain().focus().toggleHeading({ level: 2 }).run()" :class="{ 'tb-btn--active': editor.isActive('heading', { level: 2 }) }" title="标题2">H2</button>
+      <button class="tb-btn" @click="editor.chain().focus().toggleHeading({ level: 3 }).run()" :class="{ 'tb-btn--active': editor.isActive('heading', { level: 3 }) }" title="标题3">H3</button>
+      <span class="tb-sep" />
+      <button class="tb-btn" @click="editor.chain().focus().toggleBulletList().run()" :class="{ 'tb-btn--active': editor.isActive('bulletList') }" title="无序列表">•</button>
+      <button class="tb-btn" @click="editor.chain().focus().toggleOrderedList().run()" :class="{ 'tb-btn--active': editor.isActive('orderedList') }" title="有序列表">1.</button>
+      <button class="tb-btn" @click="editor.chain().focus().toggleBlockquote().run()" :class="{ 'tb-btn--active': editor.isActive('blockquote') }" title="引用">"</button>
+      <button class="tb-btn" @click="editor.chain().focus().toggleCodeBlock().run()" :class="{ 'tb-btn--active': editor.isActive('codeBlock') }" title="代码">&lt;/&gt;</button>
+      <span class="tb-sep" />
+      <button class="tb-btn" @click="addImage" title="插入图片">🖼</button>
+      <button class="tb-btn" @click="addLink" title="插入链接">🔗</button>
+      <!-- 隐藏的文件选择器 -->
+      <input ref="fileInput" type="file" accept="image/*" style="display:none" @change="onFileSelected" />
+    </div>
+
+    <!-- 上传中提示 -->
+    <div v-if="uploadingImage" class="pe-uploading glass-card">
+      <span class="uploading-spinner">✦</span>
+      <span>图片上传中…</span>
+    </div>
+
+    <!-- 编辑器 -->
+    <div class="pe-editor glass-card" :class="{ 'pe-editor--uploading': uploadingImage }">
+      <EditorContent :editor="editor" class="editor-content" />
+    </div>
+
+    <!-- 元数据面板 -->
+    <div class="pe-meta">
+      <div class="pe-meta-row" v-if="form.type !== 'article'">
+        <label class="meta-label">评分 (1-10)</label>
+        <input v-model.number="form.rating" class="glass-input meta-input-short" type="number" min="1" max="10" placeholder="评分" />
+      </div>
+
+
+      <div class="pe-meta-row">
+        <label class="meta-label">标签</label>
+        <div class="tag-select">
+          <button
+            v-for="tag in blog.tags"
+            :key="tag.id"
+            class="tag-badge"
+            :class="{ 'tag-badge--active': form.tags.includes(tag.id) }"
+            @click="form.tags = form.tags.includes(tag.id) ? form.tags.filter(t => t !== tag.id) : [...form.tags, tag.id]"
+          >{{ tag.name }}</button>
+        </div>
+      </div>
+
+      <!-- 创作手记 -->
+      <div class="pe-writing-note">
+        <button class="writing-note-toggle glass-btn" @click="showWritingNote = !showWritingNote">
+          {{ showWritingNote ? '▼' : '▶' }} 创作手记
+        </button>
+        <div v-if="showWritingNote" class="writing-note-body">
+          <div class="note-row">
+            <input v-model="form.metadata.writing_note.mood" class="glass-input" placeholder="心情（如：惬意）" />
+            <input v-model="form.metadata.writing_note.bgm" class="glass-input" placeholder="BGM（如：ヨルシカ - 春泥棒）" />
+          </div>
+          <div class="note-row">
+            <input v-model="form.metadata.writing_note.weather" class="glass-input" placeholder="天气（如：晴 · 22°C）" />
+          </div>
+          <textarea v-model="form.metadata.writing_note.note" class="glass-input" placeholder="备注（可选）" rows="2"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- 错误提示 -->
+    <p v-if="error" class="pe-error">{{ error }}</p>
+
+    <!-- 操作按钮 -->
+    <div class="pe-actions">
+      <router-link to="/admin/posts" class="glass-btn">← 返回</router-link>
+      <div class="pe-actions-right">
+        <button class="glass-btn" :disabled="saving" @click="handleSave(false)">{{ saving ? '保存中…' : '存为草稿' }}</button>
+        <button class="glass-btn pe-btn-publish" :disabled="saving" @click="handleSave(true)">{{ saving ? '发布中…' : '发布' }}</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.post-editor {
+  max-width: 860px;
+}
+
+/* 类型选择 */
+.pe-type-select {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.type-btn {
+  font-size: 14px;
+  padding: 8px 20px;
+  transition: all var(--transition-base);
+}
+
+.type-btn--active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+}
+
+/* 输入 */
+.pe-title {
+  font-size: 22px;
+  font-weight: 600;
+  padding: 14px 18px;
+  margin-bottom: 12px;
+  border-radius: var(--radius-md);
+}
+
+.pe-summary {
+  font-size: 14px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  resize: vertical;
+  font-family: var(--font-sans);
+}
+
+/* 工具栏 */
+.pe-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 6px 8px;
+  margin-bottom: 1px;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.tb-btn {
+  width: 32px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tb-btn:hover { background: rgba(139, 69, 19, 0.08); color: var(--color-text); }
+.tb-btn--active { background: rgba(139, 69, 19, 0.12); color: var(--color-primary); }
+
+.tb-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--glass-border);
+  margin: 0 4px;
+}
+
+/* 编辑器 */
+.pe-editor {
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  margin-bottom: 20px;
+}
+
+.editor-content {
+  padding: 20px 24px;
+  min-height: 320px;
+}
+
+.editor-content :deep(.ProseMirror) {
+  outline: none;
+  min-height: 320px;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.editor-content :deep(.ProseMirror p) { margin-bottom: 0.8em; }
+.editor-content :deep(.ProseMirror h1) { font-size: 24px; margin: 1em 0 0.5em; }
+.editor-content :deep(.ProseMirror h2) { font-size: 20px; margin: 0.8em 0 0.4em; }
+.editor-content :deep(.ProseMirror h3) { font-size: 17px; margin: 0.6em 0 0.3em; }
+.editor-content :deep(.ProseMirror ul), .editor-content :deep(.ProseMirror ol) { padding-left: 24px; margin-bottom: 0.8em; }
+.editor-content :deep(.ProseMirror blockquote) { border-left: 3px solid var(--color-primary); padding-left: 16px; color: var(--color-text-secondary); margin: 0.8em 0; }
+.editor-content :deep(.ProseMirror pre) { background: rgba(44,44,44,0.92); color: #e8e4df; padding: 16px; border-radius: 8px; font-size: 13px; }
+.editor-content :deep(.ProseMirror code) { font-family: var(--font-mono); font-size: 13px; background: rgba(139,69,19,0.08); padding: 2px 6px; border-radius: 4px; }
+.editor-content :deep(.ProseMirror pre code) { background: none; }
+.editor-content :deep(.ProseMirror img) { max-width: 100%; border-radius: 8px; margin: 0.5em 0; }
+.editor-content :deep(.ProseMirror p.is-editor-empty:first-child::before) { color: var(--color-text-muted); content: attr(data-placeholder); float: left; height: 0; pointer-events: none; }
+
+/* 上传中提示 */
+.pe-uploading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: var(--color-primary);
+  border-radius: var(--radius-md);
+}
+
+.uploading-spinner {
+  display: inline-block;
+  animation: uploadSpin 0.8s linear infinite;
+  font-size: 18px;
+}
+
+@keyframes uploadSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.pe-editor--uploading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* 元数据 */
+.pe-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.pe-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.meta-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  min-width: 60px;
+  flex-shrink: 0;
+}
+
+.meta-input {
+  flex: 1;
+}
+
+.meta-input-short {
+  width: 100px;
+}
+
+.tag-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag-badge--active {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: rgba(139, 69, 19, 0.08);
+}
+
+/* 创作手记 */
+.pe-writing-note {
+  margin-top: 4px;
+}
+
+.writing-note-toggle {
+  font-size: 13px;
+  padding: 6px 14px;
+  margin-bottom: 10px;
+}
+
+.writing-note-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+}
+
+.note-row {
+  display: flex;
+  gap: 10px;
+}
+
+.note-row .glass-input {
+  flex: 1;
+}
+
+/* 错误 */
+.pe-error {
+  font-size: 14px;
+  color: var(--color-accent-anime);
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+/* 操作 */
+.pe-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pe-actions-right {
+  display: flex;
+  gap: 8px;
+}
+
+.pe-btn-publish {
+  color: var(--color-white);
+  background: var(--color-primary);
+  border: none;
+}
+
+.pe-btn-publish:hover {
+  background: var(--color-primary-light);
+}
+
+@media (max-width: 768px) {
+  .pe-type-select {
+    flex-direction: column;
+  }
+  .note-row {
+    flex-direction: column;
+  }
+  .pe-meta-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .pe-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .pe-actions-right {
+    width: 100%;
+  }
+  .pe-actions-right .glass-btn {
+    flex: 1;
+  }
+}
+</style>

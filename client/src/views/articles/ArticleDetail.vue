@@ -1,0 +1,244 @@
+<script setup>
+import { ref, onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { postApi } from '../../api'
+
+const route = useRoute()
+const post = ref(null)
+const loading = ref(true)
+const error = ref(null)
+
+const writingNote = computed(() => post.value?.metadata?.writing_note)
+
+function formatDate(d) {
+  if (!d) return ''
+  return new Date(d).toLocaleDateString('zh-CN', {
+    year: 'numeric', month: 'long', day: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  })
+}
+
+onMounted(async () => {
+  try {
+    const res = await postApi.detail(route.params.id)
+    post.value = res.post || res
+    postApi.view(route.params.id).catch(() => {})
+  } catch (e) {
+    error.value = '内容不存在或已被删除'
+  } finally {
+    loading.value = false
+  }
+})
+</script>
+
+<template>
+  <div class="page article-detail">
+    <div v-if="loading" class="detail-loading">
+      <div class="skeleton" style="height: 32px; width: 60%; margin-bottom: 16px" />
+      <div class="skeleton" style="height: 16px; width: 40%; margin-bottom: 32px" />
+      <div class="skeleton" style="height: 300px" />
+    </div>
+
+    <div v-else-if="error" class="empty-state">
+      <span class="empty-icon">📄</span>
+      <p>{{ error }}</p>
+      <router-link to="/articles" class="glass-btn" style="margin-top: 16px">返回文章列表</router-link>
+    </div>
+
+    <template v-else-if="post">
+      <article class="detail-main">
+        <header class="detail-header">
+          <span class="type-badge article">✎ 文章</span>
+          <span class="detail-category" v-if="post.Category?.name">{{ post.Category.name }}</span>
+          <h1 class="detail-title">{{ post.title }}</h1>
+          <div class="detail-meta">
+            <span>👁️ {{ (post.views || 0).toLocaleString() }} 次阅读</span>
+            <span>{{ formatDate(post.createdAt) }}</span>
+          </div>
+        </header>
+
+        <div class="detail-cover" v-if="post.cover_image">
+          <img :src="post.cover_image" :alt="post.title" />
+        </div>
+
+        <div class="detail-content prose" v-html="post.content" />
+
+        <div class="detail-tags" v-if="post.Tags?.length">
+          <router-link
+            v-for="tag in post.Tags"
+            :key="tag.id"
+            :to="`/tags/${tag.id}`"
+            class="tag-badge"
+          >#{{ tag.name }}</router-link>
+        </div>
+
+        <div class="writing-note glass-card" v-if="writingNote">
+          <div class="writing-note-header">✦ 创作手记</div>
+          <div class="writing-note-body">
+            <div class="writing-note-meta">
+              <span v-if="writingNote.mood">心情：{{ writingNote.mood }}</span>
+              <span v-if="writingNote.bgm">听歌：{{ writingNote.bgm }}</span>
+              <span v-if="writingNote.weather">天气：{{ writingNote.weather }}</span>
+            </div>
+            <p class="writing-note-text" v-if="writingNote.note">「{{ writingNote.note }}」</p>
+          </div>
+        </div>
+      </article>
+
+      <div class="section-divider">━─━─━─ セーブ ─━─━─━</div>
+
+      <div class="detail-back">
+        <router-link to="/articles" class="glass-btn">← 返回文章列表</router-link>
+      </div>
+    </template>
+  </div>
+</template>
+
+<style scoped>
+.article-detail {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.detail-loading {
+  padding: 40px 0;
+}
+
+.detail-main {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  padding: 40px 48px;
+  box-shadow: var(--glass-shadow);
+}
+
+.detail-header {
+  margin-bottom: 32px;
+}
+
+.detail-category {
+  display: inline-block;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  background: var(--glass-bg);
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.detail-title {
+  font-size: 32px;
+  font-weight: 900;
+  margin-top: 16px;
+  line-height: 1.3;
+}
+
+.detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.detail-cover {
+  margin-bottom: 32px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.detail-cover img {
+  width: 100%;
+  display: block;
+}
+
+.detail-content {
+  font-size: 16px;
+  line-height: 1.85;
+  color: var(--color-text);
+}
+
+.detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.writing-note {
+  margin-top: 32px;
+  padding: 24px 28px;
+  border-color: rgba(139, 69, 19, 0.15);
+}
+
+.writing-note-header {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 16px;
+}
+
+.writing-note-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-bottom: 12px;
+}
+
+.writing-note-text {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  font-style: italic;
+  line-height: 1.7;
+}
+
+.section-divider {
+  text-align: center;
+  padding: 40px 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--color-text-muted);
+  letter-spacing: 2px;
+  user-select: none;
+}
+
+.detail-back {
+  text-align: center;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--color-text-muted);
+}
+
+.empty-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 768px) {
+  .detail-main {
+    padding: 24px 20px;
+    border-radius: var(--radius-lg);
+  }
+
+  .detail-title {
+    font-size: 24px;
+  }
+
+  .writing-note-meta {
+    gap: 8px;
+  }
+}
+</style>

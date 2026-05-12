@@ -1,0 +1,27 @@
+{
+  "name": "blog-server",
+  "version": "1.0.0",
+  "description": "个人博客后端",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node --watch app.js",
+    "seed": "node seed.js"
+  },
+  "dependencies": {
+    "ali-oss": "^6.23.0",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "marked": "^18.0.3",
+    "multer": "^2.1.1",
+    "mysql2": "^3.22.3",
+    "sequelize": "^6.37.8"
+  },
+  "devDependencies": {
+    "supertest": "^7.2.2",
+    "vitest": "^4.1.6"
+  }
+}

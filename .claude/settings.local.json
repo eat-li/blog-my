@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm create *)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm add *)",
+      "Bash(mv tmp-client/* client/)",
+      "Bash(mv tmp-client/.* client/)",
+      "Bash(rm -rf tmp-client)",
+      "Bash(npx vite *)",
+      "Bash(mysql --version)",
+      "Bash(mysqld --version)",
+      "Bash(net start *)",
+      "Bash(node --test --test-force-exit test/*.test.mjs)",
+      "Bash(npx vitest *)",
+      "Bash(node -e ' *)",
+      "Bash(timeout 5 node -e ' *)",
+      "Bash(node app.js)",
+      "Bash(curl -s http://localhost:3000/api/config/public)",
+      "Bash(curl -s http://localhost:3000/api/stats/profile)",
+      "Bash(kill %1)",
+      "Bash(pkill -f \"node app.js\")",
+      "Bash(node -e \"require\\('dotenv'\\).config\\({path:'C:/Users/13518/Desktop/blog_my/server/.env'}\\); console.log\\('OSS_KEY:', process.env.OSS_ACCESS_KEY_ID\\)\")",
+      "Bash(curl -s http://localhost:3000/api/auth/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}')",
+      "Bash(pkill -f \"node\")"
+    ]
+  }
+}

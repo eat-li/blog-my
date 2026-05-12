@@ -1,0 +1,32 @@
+node_modules/
+dist/
+dist-ssr/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# 环境变量 — 包含密钥，禁止提交
+.env
+.env.local
+.env.*.local
+
+# 本地上传文件
+server/uploads/
+!server/uploads/.gitkeep
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 锁文件
+pnpm-lock.yaml
