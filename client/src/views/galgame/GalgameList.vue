@@ -39,7 +39,7 @@ const totalPages = () => Math.ceil(total.value / pageSize) || 1
     </div>
 
     <div v-if="loading" class="card-grid">
-      <div v-for="i in 4" :key="i" class="skeleton" style="height: 340px" />
+      <div v-for="i in 4" :key="i" class="skeleton" style="height: 200px" />
     </div>
 
     <div v-else-if="posts.length" class="card-grid">
@@ -72,9 +72,11 @@ const totalPages = () => Math.ceil(total.value / pageSize) || 1
 }
 
 .card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 720px;
+  margin: 0 auto;
 }
 
 .empty-state {
@@ -116,8 +118,7 @@ const totalPages = () => Math.ceil(total.value / pageSize) || 1
 
 @media (max-width: 768px) {
   .card-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 12px;
   }
 }
 </style>

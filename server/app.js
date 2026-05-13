@@ -25,6 +25,7 @@ app.use('/api/friendlinks', require('./routes/friendlinks'))
 app.use('/api/stats', require('./routes/stats'))
 app.use('/api/quotes', require('./routes/quotes'))
 app.use('/api/announcements', require('./routes/announcements'))
+app.use('/api/diaries', require('./routes/diaries'))
 
 // 错误处理
 app.use((err, req, res, next) => {

@@ -5,6 +5,7 @@ import AppFooter from './components/AppFooter.vue'
 import SakuraPetals from './components/SakuraPetals.vue'
 import PixelMascot from './components/PixelMascot.vue'
 import PageFlipLoader from './components/PageFlipLoader.vue'
+import EntryLoader from './components/EntryLoader.vue'
 import MusicPlayer from './components/MusicPlayer.vue'
 
 const bgOrbs = ref([
@@ -30,6 +31,9 @@ onMounted(animateOrbs)
   <div class="app-wrapper">
     <!-- 落樱 (全局) -->
     <SakuraPetals />
+
+    <!-- 首次进入动画 -->
+    <EntryLoader />
 
     <!-- 翻页加载动画 -->
     <PageFlipLoader />

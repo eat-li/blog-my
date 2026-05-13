@@ -4,7 +4,7 @@ import { postApi, statsApi, tagApi, configApi } from '../api'
 import NewsTicker from '../components/NewsTicker.vue'
 import AnnouncementBar from '../components/AnnouncementBar.vue'
 import HomeMessages from '../components/HomeMessages.vue'
-import PostCard from '../components/PostCard.vue'
+import HomePostItem from '../components/HomePostItem.vue'
 import TypeWriter from '../components/TypeWriter.vue'
 import Calendar from '../components/Calendar.vue'
 import TimeProgress from '../components/TimeProgress.vue'
@@ -164,7 +164,7 @@ onMounted(async () => {
               <h2 class="section-head-title" :style="{ color: s.color }">最新{{ s.label }}</h2>
             </div>
             <div class="card-grid">
-              <div v-for="i in 2" :key="i" class="skeleton" style="height: 280px" />
+              <div v-for="i in 2" :key="i" class="skeleton" style="height: 90px" />
             </div>
           </section>
         </template>
@@ -182,7 +182,7 @@ onMounted(async () => {
             </div>
 
             <div v-if="latest[section.key]?.length" class="card-grid">
-              <PostCard
+              <HomePostItem
                 v-for="post in latest[section.key]"
                 :key="post.id"
                 :post="post"
@@ -456,6 +456,7 @@ onMounted(async () => {
   align-items: center;
   gap: 10px;
   margin-bottom: 20px;
+  max-width: 680px;
 }
 
 .section-head-icon {
@@ -478,9 +479,10 @@ onMounted(async () => {
    卡片网格
    ===================== */
 .card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 680px;
 }
 
 .empty-block {
@@ -687,7 +689,7 @@ onMounted(async () => {
   }
 
   .card-grid {
-    grid-template-columns: 1fr;
+    gap: 12px;
   }
 
   .section-head {

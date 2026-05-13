@@ -34,6 +34,11 @@ class FriendLinkService {
     }
   }
 
+  async apply(data) {
+    // 公开申请，强制待审核状态
+    return this.create({ ...data, status: 'pending' })
+  }
+
   async create(data) {
     if (!data.nickname || !data.nickname.trim()) {
       throw Object.assign(new Error('昵称不能为空'), { status: 400 })

@@ -50,6 +50,7 @@ export const statsApi = {
 
 export const friendlinkApi = {
   list: () => request.get('/friendlinks'),
+  apply: (data) => request.post('/friendlinks/apply', data),
   adminList: (params) => request.get('/friendlinks/admin', { params }),
   create: (data) => request.post('/friendlinks', data),
   update: (id, data) => request.put(`/friendlinks/${id}`, data),
@@ -70,6 +71,15 @@ export const announcementApi = {
   create: (data) => request.post('/announcements', data),
   update: (id, data) => request.put(`/announcements/${id}`, data),
   delete: (id) => request.delete(`/announcements/${id}`)
+}
+
+export const diaryApi = {
+  list: (params) => request.get('/diaries', { params }),
+  detail: (id) => request.get(`/diaries/${id}`),
+  adminList: (params) => request.get('/diaries/admin/list', { params }),
+  create: (data) => request.post('/diaries', data),
+  update: (id, data) => request.put(`/diaries/${id}`, data),
+  delete: (id) => request.delete(`/diaries/${id}`)
 }
 
 export const uploadApi = {

@@ -1,14 +1,23 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { postApi } from '../../api'
+import { postApi, configApi } from '../../api'
+import ArticleTOC from '../../components/ArticleTOC.vue'
 
 const route = useRoute()
 const post = ref(null)
 const loading = ref(true)
 const error = ref(null)
+const tocRef = ref(null)
+const siteInfo = ref({})
 
 const writingNote = computed(() => post.value?.metadata?.writing_note)
+
+// 渲染用的 HTML：优先使用 TOC 处理后的（已补标题 id）
+const renderContent = computed(() => {
+  if (tocRef.value?.enrichedHTML) return tocRef.value.enrichedHTML
+  return post.value?.content || ''
+})
 
 function formatDate(d) {
   if (!d) return ''
@@ -20,8 +29,12 @@ function formatDate(d) {
 
 onMounted(async () => {
   try {
-    const res = await postApi.detail(route.params.id)
+    const [res, config] = await Promise.all([
+      postApi.detail(route.params.id),
+      configApi.getPublic().catch(() => ({}))
+    ])
     post.value = res.post || res
+    siteInfo.value = config?.site_info || {}
     postApi.view(route.params.id).catch(() => {})
   } catch (e) {
     error.value = '内容不存在或已被删除'
@@ -40,55 +53,66 @@ onMounted(async () => {
     </div>
 
     <div v-else-if="error" class="empty-state">
-      <span class="empty-icon">📄</span>
       <p>{{ error }}</p>
       <router-link to="/articles" class="glass-btn" style="margin-top: 16px">返回文章列表</router-link>
     </div>
 
     <template v-else-if="post">
-      <article class="detail-main">
-        <header class="detail-header">
-          <span class="type-badge article">✎ 文章</span>
-          <span class="detail-category" v-if="post.Category?.name">{{ post.Category.name }}</span>
-          <h1 class="detail-title">{{ post.title }}</h1>
-          <div class="detail-meta">
-            <span>👁️ {{ (post.views || 0).toLocaleString() }} 次阅读</span>
-            <span>{{ formatDate(post.createdAt) }}</span>
-          </div>
-        </header>
+      <!-- 双栏布局 -->
+      <div class="detail-layout">
+        <!-- 左侧 TOC -->
+        <ArticleTOC
+          ref="tocRef"
+          :content="post.content"
+          :avatar="siteInfo.avatar"
+          :signature="siteInfo.signature"
+        />
 
-        <div class="detail-cover" v-if="post.cover_image">
-          <img :src="post.cover_image" :alt="post.title" />
-        </div>
-
-        <div class="detail-content prose" v-html="post.content" />
-
-        <div class="detail-tags" v-if="post.Tags?.length">
-          <router-link
-            v-for="tag in post.Tags"
-            :key="tag.id"
-            :to="`/tags/${tag.id}`"
-            class="tag-badge"
-          >#{{ tag.name }}</router-link>
-        </div>
-
-        <div class="writing-note glass-card" v-if="writingNote">
-          <div class="writing-note-header">✦ 创作手记</div>
-          <div class="writing-note-body">
-            <div class="writing-note-meta">
-              <span v-if="writingNote.mood">心情：{{ writingNote.mood }}</span>
-              <span v-if="writingNote.bgm">听歌：{{ writingNote.bgm }}</span>
-              <span v-if="writingNote.weather">天气：{{ writingNote.weather }}</span>
+        <!-- 右侧正文 -->
+        <article class="detail-main">
+          <header class="detail-header">
+            <span class="type-badge article">文章</span>
+            <span class="detail-category" v-if="post.Category?.name">{{ post.Category.name }}</span>
+            <h1 class="detail-title">{{ post.title }}</h1>
+            <div class="detail-meta">
+              <span>{{ (post.views || 0).toLocaleString() }} 次阅读</span>
+              <span>{{ formatDate(post.createdAt) }}</span>
             </div>
-            <p class="writing-note-text" v-if="writingNote.note">「{{ writingNote.note }}」</p>
-          </div>
-        </div>
-      </article>
+          </header>
 
-      <div class="section-divider">━─━─━─ セーブ ─━─━─━</div>
+          <div class="detail-cover" v-if="post.cover_image">
+            <img :src="post.cover_image" :alt="post.title" />
+          </div>
+
+          <div class="detail-content prose" v-html="renderContent" />
+
+          <div class="detail-tags" v-if="post.Tags?.length">
+            <router-link
+              v-for="tag in post.Tags"
+              :key="tag.id"
+              :to="`/tags/${tag.id}`"
+              class="tag-badge"
+            >#{{ tag.name }}</router-link>
+          </div>
+
+          <div class="writing-note glass-card" v-if="writingNote">
+            <div class="writing-note-header">创作手记</div>
+            <div class="writing-note-body">
+              <div class="writing-note-meta">
+                <span v-if="writingNote.mood">心情：{{ writingNote.mood }}</span>
+                <span v-if="writingNote.bgm">听歌：{{ writingNote.bgm }}</span>
+                <span v-if="writingNote.weather">天气：{{ writingNote.weather }}</span>
+              </div>
+              <p class="writing-note-text" v-if="writingNote.note">「{{ writingNote.note }}」</p>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div class="section-divider">&#9473; &#9473; &#9473; &#9473; セーブ &#9473; &#9473; &#9473; &#9473;</div>
 
       <div class="detail-back">
-        <router-link to="/articles" class="glass-btn">← 返回文章列表</router-link>
+        <router-link to="/articles" class="glass-btn">返回文章列表</router-link>
       </div>
     </template>
   </div>
@@ -96,15 +120,18 @@ onMounted(async () => {
 
 <style scoped>
 .article-detail {
-  max-width: 800px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
-.detail-loading {
-  padding: 40px 0;
+/* 双栏布局 — TOC 固定定位，此处留出左侧空间 */
+.detail-layout {
+  padding-left: 252px;  /* TOC 宽度 220px + 间距 32px */
 }
 
 .detail-main {
+  flex: 1;
+  min-width: 0;
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -112,6 +139,10 @@ onMounted(async () => {
   border-radius: var(--radius-xl);
   padding: 40px 48px;
   box-shadow: var(--glass-shadow);
+}
+
+.detail-loading {
+  padding: 40px 0;
 }
 
 .detail-header {
@@ -221,10 +252,16 @@ onMounted(async () => {
   color: var(--color-text-muted);
 }
 
-.empty-icon {
-  font-size: 48px;
-  display: block;
-  margin-bottom: 16px;
+@media (max-width: 1024px) {
+  .article-detail {
+    max-width: 800px;
+  }
+
+  .detail-layout {
+    padding-left: 0;
+    flex-direction: column;
+    gap: 0;
+  }
 }
 
 @media (max-width: 768px) {

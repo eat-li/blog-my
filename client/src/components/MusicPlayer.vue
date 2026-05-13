@@ -1,30 +1,18 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useMusicStore } from '../stores/music'
 import { configApi } from '../api'
 
-// ——— 状态 ———
-const songs = ref([])
-const currentIndex = ref(0)
-const isPlaying = ref(false)
-const currentTime = ref(0)
-const duration = ref(0)
-const volume = ref(0.5)
-const shuffle = ref(false)
-const expanded = ref(false)
-const configLoaded = ref(false)
+const store = useMusicStore()
+const {
+  songs, currentIndex, isPlaying, currentTime, duration,
+  volume, shuffle, expanded, configLoaded, shuffledIndexes
+} = storeToRefs(store)
 
-const STORAGE_PREFIX = 'music_'
 const audio = new Audio()
 
-// ——— 计算属性 ———
-const currentSong = computed(() => songs.value[currentIndex.value] || null)
-const progressPercent = computed(() =>
-  duration.value ? (currentTime.value / duration.value) * 100 : 0
-)
-const hasSongs = computed(() => songs.value.length > 0)
-
-// shuffledIndexes 存储洗牌后的索引序列
-const shuffledIndexes = ref([])
+// 播放列表（支持洗牌显示）
 const displayPlaylist = computed(() => {
   if (!shuffle.value || shuffledIndexes.value.length === 0) {
     return songs.value.map((s, i) => ({ ...s, index: i }))
@@ -32,60 +20,21 @@ const displayPlaylist = computed(() => {
   return shuffledIndexes.value.map(i => ({ ...songs.value[i], index: i }))
 })
 
-// ——— localStorage 读写 ———
-function saveState() {
-  try {
-    localStorage.setItem(STORAGE_PREFIX + 'playing', isPlaying.value)
-    localStorage.setItem(STORAGE_PREFIX + 'current', currentIndex.value)
-    localStorage.setItem(STORAGE_PREFIX + 'time', currentTime.value)
-    localStorage.setItem(STORAGE_PREFIX + 'volume', volume.value)
-  } catch { /* quota exceeded, ignore */ }
-}
+const currentSong = computed(() => store.currentSong)
+const progressPercent = computed(() => store.progressPercent)
+const hasSongs = computed(() => store.hasSongs)
 
-function restoreState() {
-  try {
-    const p = localStorage.getItem(STORAGE_PREFIX + 'playing')
-    const c = localStorage.getItem(STORAGE_PREFIX + 'current')
-    const t = localStorage.getItem(STORAGE_PREFIX + 'time')
-    const v = localStorage.getItem(STORAGE_PREFIX + 'volume')
-
-    if (c !== null) {
-      const idx = parseInt(c)
-      if (!isNaN(idx) && idx >= 0 && idx < songs.value.length) currentIndex.value = idx
-    }
-    if (p !== null) isPlaying.value = p === 'true'
-    if (t !== null && !isNaN(parseFloat(t))) currentTime.value = parseFloat(t)
-    if (v !== null && !isNaN(parseFloat(v))) volume.value = Math.max(0, Math.min(1, parseFloat(v)))
-  } catch { /* corrupted, ignore */ }
-}
-
-// ——— 洗牌 ———
-function generateShuffledOrder() {
-  const n = songs.value.length
-  const arr = Array.from({ length: n }, (_, i) => i)
-  for (let i = n - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[arr[i], arr[j]] = [arr[j], arr[i]]
-  }
-  shuffledIndexes.value = arr
-}
-
-// ——— 音频事件 ———
-function onLoadedMetadata() { duration.value = audio.duration }
-function onTimeUpdate() { currentTime.value = audio.currentTime }
-function onEnded() {
-  next()
-}
+// —— 音频事件 ——
+function onLoadedMetadata() { store.setDuration(audio.duration) }
+function onTimeUpdate() { store.setTime(audio.currentTime) }
+function onEnded() { next() }
 function onError() {
-  // 加载失败，1秒后切到下一首
-  setTimeout(() => {
-    if (songs.value.length) next()
-  }, 1000)
+  setTimeout(() => { if (songs.value.length) next() }, 1000)
 }
-function onPlay() { isPlaying.value = true }
-function onPause() { isPlaying.value = false }
+function onPlay() { store.setPlaying(true) }
+function onPause() { store.setPlaying(false) }
 
-function bindAudioEvents() {
+function bindEvents() {
   audio.addEventListener('loadedmetadata', onLoadedMetadata)
   audio.addEventListener('timeupdate', onTimeUpdate)
   audio.addEventListener('ended', onEnded)
@@ -94,7 +43,7 @@ function bindAudioEvents() {
   audio.addEventListener('pause', onPause)
 }
 
-function unbindAudioEvents() {
+function unbindEvents() {
   audio.removeEventListener('loadedmetadata', onLoadedMetadata)
   audio.removeEventListener('timeupdate', onTimeUpdate)
   audio.removeEventListener('ended', onEnded)
@@ -103,10 +52,10 @@ function unbindAudioEvents() {
   audio.removeEventListener('pause', onPause)
 }
 
-// ——— 核心操作 ———
+// —— 核心操作 ——
 function loadSong(index) {
   if (!songs.value[index]) return
-  currentIndex.value = index
+  store.selectSong(index)
   audio.src = songs.value[index].url
   audio.load()
 }
@@ -128,7 +77,6 @@ function togglePlay() {
 function next() {
   if (!songs.value.length) return
   if (shuffle.value && shuffledIndexes.value.length) {
-    // 找到当前 index 在洗牌序中的位置，取下一个
     const pos = shuffledIndexes.value.indexOf(currentIndex.value)
     const nextPos = (pos + 1) % shuffledIndexes.value.length
     playSong(shuffledIndexes.value[nextPos])
@@ -149,14 +97,11 @@ function prev() {
 }
 
 function toggleShuffle() {
-  shuffle.value = !shuffle.value
-  if (shuffle.value) generateShuffledOrder()
-  else shuffledIndexes.value = []
-  saveState()
+  store.toggleShuffle()
 }
 
 function setVolume(e) {
-  volume.value = parseFloat(e.target.value)
+  store.setVolume(parseFloat(e.target.value))
 }
 
 function seekTo(event) {
@@ -174,17 +119,7 @@ function selectSong(index) {
   playSong(index)
 }
 
-// ——— 自动播放策略 ———
-async function tryAutoplay() {
-  try {
-    await audio.play()
-    isPlaying.value = true
-  } catch {
-    isPlaying.value = false
-  }
-}
-
-// ——— 时间格式化 ———
+// —— 时间格式化 ——
 function fmtTime(s) {
   if (!s || isNaN(s)) return '00:00'
   const m = Math.floor(s / 60)
@@ -192,55 +127,29 @@ function fmtTime(s) {
   return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
 }
 
-// ——— 初始化 ———
+// —— 初始化 ——
 async function init() {
   try {
     const config = await configApi.getPublic()
-    if (!config.music || !config.music.songs?.length) return
+    if (!store.initFromConfig(config)) return
 
-    songs.value = config.music.songs
-    volume.value = config.music.volume ?? 0.5
-    shuffle.value = config.music.shuffle ?? false
     audio.volume = volume.value
-
-    if (shuffle.value) generateShuffledOrder()
-
-    restoreState()
-    bindAudioEvents()
+    bindEvents()
     loadSong(currentIndex.value)
-
-    // 恢复播放进度
-    const savedTime = parseFloat(localStorage.getItem(STORAGE_PREFIX + 'time'))
-    if (savedTime > 0 && !isNaN(savedTime)) {
-      audio.addEventListener('loadedmetadata', function restore() {
-        audio.currentTime = savedTime
-        audio.removeEventListener('loadedmetadata', restore)
-      }, { once: true })
-    }
-
-    if (isPlaying.value || config.music.autoplay) {
-      tryAutoplay()
-    }
-
-    configLoaded.value = true
-  } catch { /* config load failed, silently ignore */ }
+  } catch { /* 加载失败，静默处理 */ }
 }
 
-// ——— 生命周期 ———
+// —— 生命周期 ——
 onMounted(init)
 
-const saveInterval = setInterval(saveState, 5000)
-
 onUnmounted(() => {
-  saveState()
-  clearInterval(saveInterval)
-  unbindAudioEvents()
+  store.persist()
+  unbindEvents()
   audio.pause()
 })
 
-// 关键状态变化即时保存
-watch([isPlaying, currentIndex], () => saveState())
-watch(volume, () => { audio.volume = volume.value; saveState() })
+// 音量变化同步到 audio
+watch(volume, (v) => { audio.volume = v })
 </script>
 
 <template>
@@ -248,10 +157,10 @@ watch(volume, () => { audio.volume = volume.value; saveState() })
     <!-- 迷你模式 -->
     <transition name="music-mini-fade">
       <div v-if="!expanded" class="music-mini glass-card" @click="expanded = true" title="展开播放器">
-        <span class="music-icon" :class="{ playing: isPlaying }">♬</span>
+        <span class="music-icon" :class="{ playing: isPlaying }">&#9835;</span>
         <span class="music-title-mini">{{ currentSong?.title || '无标题' }}</span>
         <span class="music-artist-mini" v-if="currentSong?.artist">- {{ currentSong.artist }}</span>
-        <span class="music-badge-mini" v-if="isPlaying">♪</span>
+        <span class="music-badge-mini" v-if="isPlaying">&#9835;</span>
       </div>
     </transition>
 
@@ -260,8 +169,8 @@ watch(volume, () => { audio.volume = volume.value; saveState() })
       <div v-if="expanded" class="music-expanded glass-card">
         <!-- 头部 -->
         <div class="music-header">
-          <span class="music-header-title">♬ 今の音楽</span>
-          <button class="music-close" @click="expanded = false" title="收起">✕</button>
+          <span class="music-header-title">&#9835; 今の音楽</span>
+          <button class="music-close" @click="expanded = false" title="收起">&#10005;</button>
         </div>
 
         <!-- 进度条 -->
@@ -278,19 +187,19 @@ watch(volume, () => { audio.volume = volume.value; saveState() })
 
         <!-- 控制按钮 -->
         <div class="music-controls">
-          <button class="music-btn" @click="prev" title="上一首">⏮</button>
+          <button class="music-btn" @click="prev" title="上一首">&#9198;</button>
           <button class="music-btn music-btn-play" @click="togglePlay" :title="isPlaying ? '暂停' : '播放'">
-            {{ isPlaying ? '⏸' : '▶' }}
+            {{ isPlaying ? '&#9208;' : '&#9654;' }}
           </button>
-          <button class="music-btn" @click="next" title="下一首">⏭</button>
+          <button class="music-btn" @click="next" title="下一首">&#9197;</button>
           <button class="music-btn" @click.stop :title="isPlaying ? '播放中' : '已暂停'" style="cursor:default;font-size:12px">
-            {{ isPlaying ? '♪' : '◼' }}
+            {{ isPlaying ? '&#9835;' : '&#9632;' }}
           </button>
         </div>
 
         <!-- 音量 -->
         <div class="music-volume">
-          <span class="music-volume-icon">🔊</span>
+          <span class="music-volume-icon">&#9835;</span>
           <input
             type="range"
             class="music-volume-slider"
@@ -310,7 +219,7 @@ watch(volume, () => { audio.volume = volume.value; saveState() })
             @click="selectSong(item.index)"
           >
             <span class="music-playlist-index">
-              {{ item.index === currentIndex ? (isPlaying ? '♪' : '◼') : item.index + 1 }}
+              {{ item.index === currentIndex ? (isPlaying ? '&#9835;' : '&#9632;') : item.index + 1 }}
             </span>
             <div class="music-playlist-info">
               <div class="music-playlist-title">{{ item.title }}</div>
@@ -332,7 +241,7 @@ watch(volume, () => { audio.volume = volume.value; saveState() })
   z-index: 910;
 }
 
-/* ——— 迷你模式 ——— */
+/* 迷你模式 */
 .music-mini {
   display: flex;
   align-items: center;
@@ -388,7 +297,7 @@ watch(volume, () => { audio.volume = volume.value; saveState() })
   margin-left: -2px;
 }
 
-/* ——— 展开模式 ——— */
+/* 展开模式 */
 .music-expanded {
   position: absolute;
   bottom: 0;
@@ -520,8 +429,6 @@ watch(volume, () => { audio.volume = volume.value; saveState() })
   box-shadow: 0 4px 16px var(--color-primary-glow);
   transform: scale(1.1);
 }
-
-.music-btn-shuffle.active { color: var(--color-primary); }
 
 /* 音量 */
 .music-volume {

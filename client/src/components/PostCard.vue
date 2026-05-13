@@ -13,7 +13,10 @@ const typeColor = {
   galgame: 'var(--color-accent-galgame)'
 }
 
-const link = computed(() => `/${props.post.type}s/${props.post.id}`)
+const link = computed(() => {
+  const prefix = props.post.type === 'article' ? 'articles' : props.post.type
+  return `/${prefix}/${props.post.id}`
+})
 const accentColor = computed(() => typeColor[props.post.type] || typeColor.article)
 
 // 封面图：优先 cover_image，其次从内容提取第一张图片
@@ -107,7 +110,7 @@ function formatDate(d) {
 
 .card-cover {
   width: 100%;
-  height: 180px;
+  height: 130px;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -136,7 +139,7 @@ function formatDate(d) {
 }
 
 .card-body {
-  padding: 20px 24px 24px;
+  padding: 14px 18px 18px;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -146,7 +149,7 @@ function formatDate(d) {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .card-category {
@@ -166,9 +169,9 @@ function formatDate(d) {
 
 .card-title {
   font-family: var(--font-serif);
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   line-height: 1.4;
   transition: color var(--transition-fast);
   display: -webkit-box;
@@ -182,9 +185,9 @@ function formatDate(d) {
 }
 
 .card-summary {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--color-text-secondary);
-  line-height: 1.6;
+  line-height: 1.5;
   margin-bottom: auto;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -196,9 +199,9 @@ function formatDate(d) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--color-text-muted);
-  margin-top: 16px;
+  margin-top: 10px;
 }
 
 .card-views {
@@ -209,20 +212,20 @@ function formatDate(d) {
 
 .card-date {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 @media (max-width: 768px) {
   .card-cover {
-    height: 160px;
+    height: 110px;
   }
 
   .card-body {
-    padding: 16px 18px 20px;
+    padding: 12px 14px 16px;
   }
 
   .card-title {
-    font-size: 16px;
+    font-size: 15px;
   }
 }
 </style>

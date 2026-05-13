@@ -67,6 +67,16 @@ const routes = [
     name: 'FriendLinks',
     component: () => import('../views/FriendLinks.vue')
   },
+  {
+    path: '/diary',
+    name: 'DiaryList',
+    component: () => import('../views/diary/DiaryList.vue')
+  },
+  {
+    path: '/diary/:id',
+    name: 'DiaryDetail',
+    component: () => import('../views/diary/DiaryDetail.vue')
+  },
 
   // ========== 后台路由 ==========
   {
@@ -128,6 +138,12 @@ const routes = [
         meta: { requiresAuth: true, title: '公告管理' }
       },
       {
+        path: 'diaries',
+        name: 'AdminDiaries',
+        component: () => import('../views/admin/DiaryAdmin.vue'),
+        meta: { requiresAuth: true, title: '日记管理' }
+      },
+      {
         path: 'settings',
         name: 'AdminSettings',
         component: () => import('../views/admin/Settings.vue'),
@@ -146,7 +162,10 @@ const routes = [
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
+  scrollBehavior() {
+    return { top: 0 }
+  }
 })
 
 router.beforeEach((to, from, next) => {

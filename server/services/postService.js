@@ -40,7 +40,7 @@ class PostService {
         where: { status: 'published', type },
         include: [{ model: Category, attributes: ['id', 'name'] }],
         order: [['createdAt', 'DESC']],
-        limit: 5
+        limit: 2
       })
       result[type] = posts
     }

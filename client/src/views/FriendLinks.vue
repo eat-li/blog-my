@@ -1,9 +1,77 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { friendlinkApi } from '../api'
 
 const links = ref([])
 const loading = ref(true)
+
+// 申请表单
+const showForm = ref(false)
+const submitting = ref(false)
+const submitMsg = ref('')
+const submitOk = ref(false)
+const form = reactive({
+  nickname: '',
+  avatar: '',
+  signature: '',
+  url: ''
+})
+
+const formErrors = reactive({
+  nickname: '',
+  url: ''
+})
+
+function toggleForm() {
+  showForm.value = !showForm.value
+  submitMsg.value = ''
+  formErrors.nickname = ''
+  formErrors.url = ''
+}
+
+function validateForm() {
+  let valid = true
+  formErrors.nickname = ''
+  formErrors.url = ''
+
+  if (!form.nickname.trim()) {
+    formErrors.nickname = '请输入昵称'
+    valid = false
+  }
+  if (!form.url.trim()) {
+    formErrors.url = '请输入网站链接'
+    valid = false
+  } else if (!/^https?:\/\/.+/.test(form.url.trim())) {
+    formErrors.url = '请输入正确的链接（以 http:// 或 https:// 开头）'
+    valid = false
+  }
+  return valid
+}
+
+async function handleSubmit() {
+  if (!validateForm()) return
+  submitting.value = true
+  submitMsg.value = ''
+  try {
+    await friendlinkApi.apply({
+      nickname: form.nickname.trim(),
+      avatar: form.avatar.trim(),
+      signature: form.signature.trim(),
+      url: form.url.trim()
+    })
+    submitOk.value = true
+    submitMsg.value = '友链申请已提交，等待审核通过后即可显示'
+    form.nickname = ''
+    form.avatar = ''
+    form.signature = ''
+    form.url = ''
+  } catch (e) {
+    submitOk.value = false
+    submitMsg.value = e?.response?.data?.message || '提交失败，请稍后再试'
+  } finally {
+    submitting.value = false
+  }
+}
 
 onMounted(async () => {
   try {
@@ -71,6 +139,87 @@ function visitLink(link) {
     <div v-else class="fl-empty glass-card">
       <div class="fl-empty-icon">✦</div>
       <p>暂无友链，敬请期待</p>
+    </div>
+
+    <!-- 申请友链 -->
+    <div class="apply-section">
+      <button
+        v-if="!showForm"
+        class="apply-toggle glass-btn"
+        @click="toggleForm"
+      >✦ 申请友链</button>
+
+      <div v-else class="apply-card glass-card">
+        <h2 class="apply-title">申请友链</h2>
+        <p class="apply-desc">提交后将进入审核，通过后即可展示在友链列表中</p>
+
+        <form class="apply-form" @submit.prevent="handleSubmit">
+          <div class="apply-field">
+            <label class="apply-label">
+              昵称 <span class="apply-required">*</span>
+            </label>
+            <input
+              v-model="form.nickname"
+              type="text"
+              class="apply-input"
+              placeholder="你的网站名称"
+              maxlength="50"
+            />
+            <span class="apply-error" v-if="formErrors.nickname">{{ formErrors.nickname }}</span>
+          </div>
+
+          <div class="apply-field">
+            <label class="apply-label">头像链接</label>
+            <input
+              v-model="form.avatar"
+              type="text"
+              class="apply-input"
+              placeholder="头像图片 URL（可选）"
+            />
+          </div>
+
+          <div class="apply-field">
+            <label class="apply-label">个性签名</label>
+            <input
+              v-model="form.signature"
+              type="text"
+              class="apply-input"
+              placeholder="一句话介绍（可选）"
+              maxlength="200"
+            />
+          </div>
+
+          <div class="apply-field">
+            <label class="apply-label">
+              网站链接 <span class="apply-required">*</span>
+            </label>
+            <input
+              v-model="form.url"
+              type="text"
+              class="apply-input"
+              placeholder="https://your-site.com"
+            />
+            <span class="apply-error" v-if="formErrors.url">{{ formErrors.url }}</span>
+          </div>
+
+          <div class="apply-actions">
+            <button
+              type="submit"
+              class="apply-submit glass-btn"
+              :disabled="submitting"
+            >{{ submitting ? '提交中…' : '提交申请' }}</button>
+            <button
+              type="button"
+              class="apply-cancel glass-btn"
+              @click="toggleForm"
+            >取消</button>
+          </div>
+
+          <p class="apply-msg" :class="{ 'apply-msg--ok': submitOk }" v-if="submitMsg">
+            {{ submitMsg }}
+          </p>
+        </form>
+      </div>
     </div>
   </div>
 </template>
@@ -205,6 +354,129 @@ function visitLink(link) {
   color: var(--color-primary);
   opacity: 0.5;
   margin-bottom: 12px;
+}
+
+/* =====================
+   申请友链表单
+   ===================== */
+.apply-section {
+  margin-top: 48px;
+  text-align: center;
+}
+
+.apply-toggle {
+  font-size: 15px;
+  padding: 12px 32px;
+  letter-spacing: 1px;
+}
+
+.apply-card {
+  text-align: left;
+  padding: 36px 40px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.apply-title {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.apply-desc {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-bottom: 28px;
+  line-height: 1.6;
+}
+
+.apply-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.apply-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.apply-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.apply-required {
+  color: var(--color-accent-anime);
+}
+
+.apply-input {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  background: var(--glass-bg);
+  color: var(--color-text);
+  backdrop-filter: var(--glass-blur);
+  transition: border-color var(--transition-fast);
+  outline: none;
+}
+
+.apply-input:focus {
+  border-color: var(--color-primary);
+}
+
+.apply-input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+
+.apply-error {
+  font-size: 12px;
+  color: var(--color-accent-anime);
+}
+
+.apply-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.apply-submit {
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.apply-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.apply-cancel {
+  padding: 10px 24px;
+  font-size: 14px;
+  opacity: 0.6;
+}
+
+.apply-msg {
+  font-size: 13px;
+  text-align: center;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  background: rgba(139, 69, 19, 0.06);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.apply-msg--ok {
+  background: rgba(123, 168, 114, 0.12);
+  color: #5a8a4e;
 }
 
 /* 响应式 */
