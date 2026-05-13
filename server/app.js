@@ -57,7 +57,7 @@ if (isProduction) {
   const path = require('path')
   const distPath = path.join(__dirname, '..', 'client', 'dist')
   app.use(express.static(distPath, { maxAge: '7d' }))
-  app.get('*', (req, res) => {
+  app.use((req, res) => {
     res.sendFile(path.join(distPath, 'index.html'))
   })
 }
