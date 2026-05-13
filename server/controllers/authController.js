@@ -5,8 +5,8 @@ exports.login = async (req, res, next) => {
     const result = await authService.login(req.body.username, req.body.password)
     res.cookie('token', result.token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: false,
+      sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000
     })
     res.json({ user: result.user })
@@ -18,8 +18,8 @@ exports.login = async (req, res, next) => {
 exports.logout = async (req, res) => {
   res.clearCookie('token', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
+    secure: false,
+    sameSite: 'lax'
   })
   res.json({ message: '已登出' })
 }
