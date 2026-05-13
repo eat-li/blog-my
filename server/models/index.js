@@ -6,6 +6,8 @@ const Tag = require('./tag.model')
 const Message = require('./message.model')
 const Config = require('./config.model')
 const FriendLink = require('./friendlink.model')
+const Quote = require('./quote.model')
+const Announcement = require('./announcement.model')
 
 // 关联
 User.hasMany(Post, { foreignKey: 'user_id' })
@@ -38,5 +40,7 @@ module.exports = {
   Message,
   Config,
   FriendLink,
+  Quote,
+  Announcement,
   syncDatabase
 }

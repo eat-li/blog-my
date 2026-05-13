@@ -16,6 +16,8 @@ const navGroups = [
       { path: '/admin/posts', label: '内容管理', icon: '✎' },
       { path: '/admin/messages', label: '留言管理', icon: '☰' },
       { path: '/admin/links', label: '友链管理', icon: '⚭' },
+      { path: '/admin/quotes', label: '名言管理', icon: '☰' },
+      { path: '/admin/announcements', label: '公告管理', icon: '◇' },
     ],
   },
   {

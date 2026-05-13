@@ -1,26 +1,24 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { quoteApi } from '../api'
 
-const quotes = [
-  { ja: '汐は美しい… 今は、この奇跡を抱きしめよう', zh: '汐是美丽的… 现在，让我拥抱这份奇迹', source: 'CLANNAD ~After Story~' },
-  { ja: 'エル・プサイ・コングルゥ', zh: 'El Psy Kongroo', source: 'Steins;Gate' },
-  { ja: '僕たちは、きっと、この先も、ずっと…', zh: '我们一定，从今以后，也会一直…', source: '天気の子' },
-  { ja: 'まだ会ったことのない君を、探している', zh: '还在寻找着，未曾谋面的你', source: '君の名は。' },
-  { ja: '逃げちゃダメだ、逃げちゃダメだ', zh: '不能逃、不能逃', source: '新世紀エヴァンゲリオン' },
-  { ja: '世界は美しさと残酷さでできている', zh: '世界由美丽与残酷构成', source: '魔法少女まどか☆マギカ' },
-  { ja: '人生って、楽しいことばかりじゃないさ', zh: '人生啊，不全是开心的事呢', source: '3月のライオン' },
-  { ja: '何かを得るためには、同等の代償が必要', zh: '想要得到什么，就需要付出同等的代价', source: '鋼の錬金術師' },
-  { ja: '人は一人では生きていけない', zh: '人无法独自活下去', source: 'ONE PIECE' },
-  { ja: '自分の生きている世界を、好きでありたい', zh: '希望自己能喜欢自己生活的这个世界', source: '響け！ユーフォニアム' },
-]
+const quotes = ref([])
 
 const currentIndex = ref(0)
 let timer = null
 
-onMounted(() => {
-  timer = setInterval(() => {
-    currentIndex.value = (currentIndex.value + 1) % quotes.length
-  }, 5000)
+onMounted(async () => {
+  try {
+    const res = await quoteApi.list()
+    quotes.value = res.data || []
+  } catch {
+    quotes.value = []
+  }
+  if (quotes.value.length) {
+    timer = setInterval(() => {
+      currentIndex.value = (currentIndex.value + 1) % quotes.value.length
+    }, 5000)
+  }
 })
 
 onUnmounted(() => {
@@ -29,8 +27,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="ticker-wrapper">
-    <div class="ticker-label">♪ 現在再生中</div>
+  <div v-if="quotes.length" class="ticker-wrapper">
+    <div class="ticker-label">現在再生中</div>
     <div class="ticker-stage">
       <transition name="ticker-slide" mode="out-in">
         <div class="ticker-content" :key="currentIndex">

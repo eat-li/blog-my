@@ -278,7 +278,6 @@ watch(volume, () => { audio.volume = volume.value; saveState() })
 
         <!-- 控制按钮 -->
         <div class="music-controls">
-          <button class="music-btn music-btn-shuffle" :class="{ active: shuffle }" @click="toggleShuffle" title="随机播放">🔀</button>
           <button class="music-btn" @click="prev" title="上一首">⏮</button>
           <button class="music-btn music-btn-play" @click="togglePlay" :title="isPlaying ? '暂停' : '播放'">
             {{ isPlaying ? '⏸' : '▶' }}

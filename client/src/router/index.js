@@ -116,6 +116,18 @@ const routes = [
         meta: { requiresAuth: true, title: '友链管理' }
       },
       {
+        path: 'quotes',
+        name: 'AdminQuotes',
+        component: () => import('../views/admin/QuotesAdmin.vue'),
+        meta: { requiresAuth: true, title: '名言管理' }
+      },
+      {
+        path: 'announcements',
+        name: 'AdminAnnouncements',
+        component: () => import('../views/admin/AnnouncementsAdmin.vue'),
+        meta: { requiresAuth: true, title: '公告管理' }
+      },
+      {
         path: 'settings',
         name: 'AdminSettings',
         component: () => import('../views/admin/Settings.vue'),

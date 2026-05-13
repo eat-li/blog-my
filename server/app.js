@@ -19,11 +19,12 @@ app.use('/api/posts', require('./routes/posts'))
 app.use('/api/categories', require('./routes/categories'))
 app.use('/api/tags', require('./routes/tags'))
 app.use('/api/messages', require('./routes/messages'))
-app.use('/api/github', require('./routes/github'))
 app.use('/api/config', require('./routes/config'))
 app.use('/api/upload', require('./routes/upload'))
 app.use('/api/friendlinks', require('./routes/friendlinks'))
 app.use('/api/stats', require('./routes/stats'))
+app.use('/api/quotes', require('./routes/quotes'))
+app.use('/api/announcements', require('./routes/announcements'))
 
 // 错误处理
 app.use((err, req, res, next) => {

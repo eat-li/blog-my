@@ -1,7 +1,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { postApi, statsApi, githubApi, tagApi, configApi } from '../api'
+import { postApi, statsApi, tagApi, configApi } from '../api'
 import NewsTicker from '../components/NewsTicker.vue'
+import AnnouncementBar from '../components/AnnouncementBar.vue'
+import HomeMessages from '../components/HomeMessages.vue'
 import PostCard from '../components/PostCard.vue'
 import TypeWriter from '../components/TypeWriter.vue'
 import Calendar from '../components/Calendar.vue'
@@ -16,17 +18,17 @@ const siteInfo = ref(null)
 const loading = ref(true)
 
 const typeSections = [
-  { key: 'article', label: '文章', icon: '✎', color: 'var(--color-accent-article)', link: '/articles' },
-  { key: 'anime', label: '动漫', icon: '◉', color: 'var(--color-accent-anime)', link: '/anime' },
-  { key: 'galgame', label: 'Galgame', icon: '◈', color: 'var(--color-accent-galgame)', link: '/galgame' },
+  { key: 'article', label: '文章', color: 'var(--color-accent-article)', link: '/articles' },
+  { key: 'anime', label: '动漫', color: 'var(--color-accent-anime)', link: '/anime' },
+  { key: 'galgame', label: 'Galgame', color: 'var(--color-accent-galgame)', link: '/galgame' },
 ]
 
 const statItems = [
-  { key: 'articles', label: '文章', icon: '✎', color: 'var(--color-accent-article)' },
-  { key: 'anime', label: '动漫', icon: '◉', color: 'var(--color-accent-anime)' },
-  { key: 'galgame', label: 'Galgame', icon: '◈', color: 'var(--color-accent-galgame)' },
-  { key: 'totalChars', label: '总字数', icon: '¶', color: 'var(--color-primary)' },
-  { key: 'totalViews', label: '次阅读', icon: '👁️', color: 'var(--color-primary)' },
+  { key: 'articles', label: '文章', color: 'var(--color-accent-article)' },
+  { key: 'anime', label: '动漫', color: 'var(--color-accent-anime)' },
+  { key: 'galgame', label: 'Galgame', color: 'var(--color-accent-galgame)' },
+  { key: 'totalChars', label: '总字数', color: 'var(--color-primary)' },
+  { key: 'totalViews', label: '次阅读', color: 'var(--color-primary)' },
 ]
 
 function formatStatVal(key, val) {
@@ -53,11 +55,10 @@ const langColors = {
 onMounted(async () => {
   const safeCall = (fn, fallback) => fn().catch(() => fallback)
 
-  const [latestRes, statsRes, heatmapRes, reposRes, tagsRes, config] = await Promise.all([
+  const [latestRes, statsRes, heatmapRes, tagsRes, config] = await Promise.all([
     safeCall(postApi.latest, { article: [], anime: [], galgame: [] }),
     safeCall(statsApi.profile, null),
     safeCall(postApi.heatmap, { heatmap: {} }),
-    safeCall(githubApi.repos, []),
     safeCall(tagApi.list, []),
     safeCall(configApi.getPublic, {}),
   ])
@@ -65,9 +66,41 @@ onMounted(async () => {
   latest.value = latestRes || { article: [], anime: [], galgame: [] }
   stats.value = statsRes?.data || statsRes || null
   heatmap.value = heatmapRes?.heatmap || {}
-  repos.value = (reposRes?.repos || reposRes || []).slice(0, 5)
   tags.value = (tagsRes?.tags || tagsRes || []).slice(0, 15)
   siteInfo.value = config?.site_info || null
+
+  // 直接从 GitHub API 获取仓库（浏览器走系统代理）
+  const ghUsername = config?.github_config?.username
+  if (ghUsername) {
+    try {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 6000)
+      const resp = await fetch(
+        `https://api.github.com/users/${ghUsername}/repos?sort=stars&per_page=6`,
+        {
+          headers: { Accept: 'application/vnd.github.v3+json' },
+          signal: controller.signal
+        }
+      )
+      clearTimeout(timer)
+      if (resp.ok) {
+        const data = await resp.json()
+        repos.value = (Array.isArray(data) ? data : [])
+          .filter(r => !r.fork)
+          .slice(0, 5)
+          .map(r => ({
+            id: r.id,
+            name: r.name,
+            description: r.description,
+            html_url: r.html_url,
+            stargazers_count: r.stargazers_count,
+            language: r.language,
+            updated_at: r.updated_at
+          }))
+      }
+    } catch { /* GitHub 不可达，repos 保持空数组 */ }
+  }
+
   loading.value = false
 })
 </script>
@@ -78,6 +111,9 @@ onMounted(async () => {
     <section class="hero-ticker">
       <NewsTicker />
     </section>
+
+    <!-- 公告栏 -->
+    <AnnouncementBar />
 
     <div class="home-layout">
       <!-- ========================
@@ -107,8 +143,7 @@ onMounted(async () => {
                 :key="s.key"
                 class="profile-stat"
               >
-                <span class="ps-icon" :style="{ color: s.color }">{{ s.icon }}</span>
-                <span class="ps-value">{{ formatStatVal(s.key, stats[s.key] || 0) }}</span>
+                <span class="ps-value" :style="{ color: s.color }">{{ formatStatVal(s.key, stats[s.key] || 0) }}</span>
                 <span class="ps-label">{{ s.label }}</span>
               </div>
             </div>
@@ -126,7 +161,6 @@ onMounted(async () => {
         <template v-if="loading">
           <section v-for="s in typeSections" :key="s.key" class="content-section">
             <div class="section-head">
-              <span class="section-head-icon" :style="{ color: s.color }">{{ s.icon }}</span>
               <h2 class="section-head-title" :style="{ color: s.color }">最新{{ s.label }}</h2>
             </div>
             <div class="card-grid">
@@ -143,7 +177,6 @@ onMounted(async () => {
             class="content-section"
           >
             <div class="section-head">
-              <span class="section-head-icon" :style="{ color: section.color }">{{ section.icon }}</span>
               <h2 class="section-head-title" :style="{ color: section.color }">最新{{ section.label }}</h2>
               <router-link :to="section.link" class="section-head-more glass-btn">查看全部 →</router-link>
             </div>
@@ -233,6 +266,9 @@ onMounted(async () => {
         </div>
       </aside>
     </div>
+
+    <!-- 留言板 -->
+    <HomeMessages />
 
     <!-- 底部装饰 -->
     <div class="home-footer">

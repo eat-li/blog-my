@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { githubApi } from '../api'
+import { configApi } from '../api'
 
 const repos = ref([])
 const user = ref(null)
@@ -26,14 +26,45 @@ function formatDate(d) {
 
 onMounted(async () => {
   try {
-    const [repoRes, userRes] = await Promise.all([
-      githubApi.repos(),
-      githubApi.user()
-    ])
-    repos.value = repoRes.repos || repoRes || []
-    user.value = userRes.user || userRes || null
+    // 获取 GitHub 用户名
+    const config = await configApi.getPublic()
+    const ghUsername = config?.github_config?.username
+    if (!ghUsername) {
+      error.value = '未配置 GitHub 用户名'
+      return
+    }
+
+    user.value = { login: ghUsername }
+
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 8000)
+    const resp = await fetch(
+      `https://api.github.com/users/${ghUsername}/repos?sort=stars&per_page=20`,
+      {
+        headers: { Accept: 'application/vnd.github.v3+json' },
+        signal: controller.signal
+      }
+    )
+    clearTimeout(timer)
+
+    if (!resp.ok) {
+      throw new Error(`GitHub API ${resp.status}`)
+    }
+
+    const data = await resp.json()
+    repos.value = (Array.isArray(data) ? data : [])
+      .filter(r => !r.fork)
+      .map(r => ({
+        id: r.id,
+        name: r.name,
+        description: r.description,
+        html_url: r.html_url,
+        stargazers_count: r.stargazers_count,
+        language: r.language,
+        updated_at: r.updated_at
+      }))
   } catch (e) {
-    error.value = '无法获取 GitHub 项目数据'
+    error.value = '无法获取 GitHub 项目数据，请检查网络连接'
   } finally {
     loading.value = false
   }

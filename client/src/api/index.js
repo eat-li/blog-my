@@ -43,11 +43,6 @@ export const configApi = {
   update: (key, value) => request.put(`/config/${key}`, { value })
 }
 
-export const githubApi = {
-  repos: () => request.get('/github/repos'),
-  user: () => request.get('/github/user')
-}
-
 export const statsApi = {
   profile: () => request.get('/stats/profile'),
   yearly: (year) => request.get('/stats/yearly', { params: { year } })
@@ -59,6 +54,22 @@ export const friendlinkApi = {
   create: (data) => request.post('/friendlinks', data),
   update: (id, data) => request.put(`/friendlinks/${id}`, data),
   delete: (id) => request.delete(`/friendlinks/${id}`)
+}
+
+export const quoteApi = {
+  list: () => request.get('/quotes'),
+  adminList: (params) => request.get('/quotes/admin', { params }),
+  create: (data) => request.post('/quotes', data),
+  update: (id, data) => request.put(`/quotes/${id}`, data),
+  delete: (id) => request.delete(`/quotes/${id}`)
+}
+
+export const announcementApi = {
+  active: () => request.get('/announcements'),
+  adminList: (params) => request.get('/announcements/admin', { params }),
+  create: (data) => request.post('/announcements', data),
+  update: (id, data) => request.put(`/announcements/${id}`, data),
+  delete: (id) => request.delete(`/announcements/${id}`)
 }
 
 export const uploadApi = {
