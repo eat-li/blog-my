@@ -5,20 +5,19 @@ const { sequelize, User, Config, syncDatabase } = require('./models')
 async function seed() {
   await syncDatabase()
 
-  // 创建管理员
+  // 创建/更新管理员
+  const adminUser = process.env.ADMIN_USER || 'admin'
   const adminPass = process.env.ADMIN_PASS || 'admin123'
-  const [user, created] = await User.findOrCreate({
-    where: { username: 'admin' },
-    defaults: {
-      username: 'admin',
-      password: await bcrypt.hash(adminPass, 10),
-      nickname: '博主'
-    }
-  })
-  if (created) {
-    console.log('管理员账号已创建')
+  const adminNick = process.env.ADMIN_NICK || '博主'
+  const hashedPwd = await bcrypt.hash(adminPass, 10)
+
+  const existing = await User.findOne({ where: { username: adminUser } })
+  if (existing) {
+    await existing.update({ password: hashedPwd, nickname: adminNick })
+    console.log(`管理员账号已更新 (${adminUser})`)
   } else {
-    console.log('管理员账号已存在')
+    await User.create({ username: adminUser, password: hashedPwd, nickname: adminNick })
+    console.log(`管理员账号已创建 (${adminUser})`)
   }
 
   // 默认配置
