@@ -2,8 +2,10 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { friendlinkApi, uploadApi } from '../../api'
+import { useConfirm } from '../../composables/useConfirm'
 
 const router = useRouter()
+const { alert: showAlert, confirm } = useConfirm()
 const links = ref([])
 const total = ref(0)
 const loading = ref(false)
@@ -74,8 +76,8 @@ function cancelForm() {
 }
 
 async function submitForm() {
-  if (!form.value.nickname.trim()) return alert('昵称不能为空')
-  if (!form.value.url.trim()) return alert('网站链接不能为空')
+  if (!form.value.nickname.trim()) return await showAlert('昵称不能为空')
+  if (!form.value.url.trim()) return await showAlert('网站链接不能为空')
 
   formLoading.value = true
   try {
@@ -88,19 +90,19 @@ async function submitForm() {
     editingId.value = null
     fetchLinks()
   } catch (e) {
-    alert(e.response?.data?.message || '操作失败')
+    await showAlert(e.response?.data?.message || '操作失败')
   } finally {
     formLoading.value = false
   }
 }
 
 async function handleDelete(id) {
-  if (!confirm('确定删除这条友链？')) return
+  if (!await confirm('确定删除这条友链？')) return
   try {
     await friendlinkApi.delete(id)
     fetchLinks()
   } catch (e) {
-    alert(e.response?.data?.message || '删除失败')
+    await showAlert(e.response?.data?.message || '删除失败')
   }
 }
 
@@ -109,7 +111,7 @@ async function handleAvatarUpload(e) {
   if (!file) return
 
   if (!file.type.startsWith('image/')) {
-    alert('请选择图片文件')
+    await showAlert('请选择图片文件')
     return
   }
 
@@ -124,7 +126,7 @@ async function handleAvatarUpload(e) {
     const res = await uploadApi.image({ base64, filename: file.name })
     form.value.avatar = res.url
   } catch (e) {
-    alert('头像上传失败，请重试')
+    await showAlert('头像上传失败，请重试')
   } finally {
     uploadingAvatar.value = false
     // 重置 input 以便重复选择同一文件

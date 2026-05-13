@@ -2,8 +2,10 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { quoteApi } from '../../api'
+import { useConfirm } from '../../composables/useConfirm'
 
 const router = useRouter()
+const { alert: showAlert, confirm } = useConfirm()
 const quotes = ref([])
 const total = ref(0)
 const loading = ref(false)
@@ -63,8 +65,8 @@ function cancelForm() {
 }
 
 async function submitForm() {
-  if (!form.value.ja.trim()) return alert('日文原文不能为空')
-  if (!form.value.zh.trim()) return alert('中文翻译不能为空')
+  if (!form.value.ja.trim()) return await showAlert('日文原文不能为空')
+  if (!form.value.zh.trim()) return await showAlert('中文翻译不能为空')
 
   formLoading.value = true
   try {
@@ -77,19 +79,19 @@ async function submitForm() {
     editingId.value = null
     fetchQuotes()
   } catch (e) {
-    alert(e.response?.data?.message || '操作失败')
+    await showAlert(e.response?.data?.message || '操作失败')
   } finally {
     formLoading.value = false
   }
 }
 
 async function handleDelete(id) {
-  if (!confirm('确定删除这条名言？')) return
+  if (!await confirm('确定删除这条名言？')) return
   try {
     await quoteApi.delete(id)
     fetchQuotes()
   } catch (e) {
-    alert(e.response?.data?.message || '删除失败')
+    await showAlert(e.response?.data?.message || '删除失败')
   }
 }
 </script>

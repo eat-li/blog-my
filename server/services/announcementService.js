@@ -1,4 +1,5 @@
 const { Announcement } = require('../models')
+const { sanitize } = require('../utils/sanitize')
 
 class AnnouncementService {
   // 公开接口：只返回启用的公告
@@ -35,7 +36,7 @@ class AnnouncementService {
       throw Object.assign(new Error('公告内容不能为空'), { status: 400 })
     }
     return Announcement.create({
-      content: data.content.trim(),
+      content: sanitize(data.content.trim()),
       is_active: data.is_active !== undefined ? data.is_active : true,
       sort_order: data.sort_order ?? 0
     })
@@ -50,7 +51,7 @@ class AnnouncementService {
       throw Object.assign(new Error('公告内容不能为空'), { status: 400 })
     }
     await announcement.update({
-      content: data.content?.trim(),
+      content: data.content ? sanitize(data.content.trim()) : undefined,
       is_active: data.is_active,
       sort_order: data.sort_order
     })

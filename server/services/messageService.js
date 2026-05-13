@@ -1,7 +1,13 @@
 const { Message } = require('../models')
+const RateLimiter = require('../utils/rateLimiter')
+const { sanitize } = require('../utils/sanitize')
 
-// IP 防刷记录（内存缓存）
-const ipCooldown = new Map()
+// 留言频率限制：30秒/1条，1小时/30条，24小时/200条
+const msgLimiter = new RateLimiter([
+  { name: 'short', windowMs: 30_000,   max: 1 },
+  { name: 'mid',   windowMs: 3600_000, max: 30 },
+  { name: 'long',  windowMs: 86400_000, max: 200 }
+])
 
 class MessageService {
   async getPublicList(query) {
@@ -29,15 +35,14 @@ class MessageService {
       throw Object.assign(new Error('留言内容需要 2-500 个字符'), { status: 400 })
     }
 
-    // IP 防刷
-    const lastMsg = ipCooldown.get(ip)
-    if (lastMsg && Date.now() - lastMsg < 30000) {
-      throw Object.assign(new Error('操作太频繁，请 30 秒后再试'), { status: 429 })
+    // IP 频率限制
+    const rateCheck = msgLimiter.check(ip)
+    if (!rateCheck.allowed) {
+      throw Object.assign(new Error(rateCheck.message), { status: 429 })
     }
-    ipCooldown.set(ip, Date.now())
 
     return await Message.create({
-      nickname, content, email, ip,
+      nickname: sanitize(nickname), content: sanitize(content), email, ip,
       parent_id: parent_id || null
     })
   }
@@ -77,9 +82,9 @@ class MessageService {
 
 const instance = new MessageService()
 
-// 测试专用：清空 IP 冷却
+// 测试专用：清空频率限制
 if (process.env.NODE_ENV === 'test') {
-  instance.clearCooldown = () => ipCooldown.clear()
+  instance.clearLimiter = () => msgLimiter.clearAll()
 }
 
 module.exports = instance

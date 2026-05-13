@@ -1,12 +1,37 @@
 require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
+const helmet = require('helmet')
+const cookieParser = require('cookie-parser')
 const { syncDatabase } = require('./models')
 
 const app = express()
 const PORT = process.env.PORT || 3000
 
-app.use(cors())
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https://blog-saki.oss-cn-chengdu.aliyuncs.com"],
+      mediaSrc: ["'self'", "https://blog-saki.oss-cn-chengdu.aliyuncs.com"],
+      connectSrc: ["'self'", "https://api.github.com"],
+      frameSrc: ["'self'"]
+    }
+  },
+  crossOriginEmbedderPolicy: false
+}))
+
+const isProduction = process.env.NODE_ENV === 'production'
+app.use(cors({
+  origin: isProduction && process.env.FRONTEND_URL
+    ? [process.env.FRONTEND_URL]
+    : ['http://localhost:5173'],
+  credentials: true
+}))
+app.use(cookieParser())
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ extended: true }))
 
@@ -26,6 +51,16 @@ app.use('/api/stats', require('./routes/stats'))
 app.use('/api/quotes', require('./routes/quotes'))
 app.use('/api/announcements', require('./routes/announcements'))
 app.use('/api/diaries', require('./routes/diaries'))
+
+// 生产环境：serve 前端静态文件 + SPA 路由回退（使用 Nginx 时可省略此段）
+if (isProduction) {
+  const path = require('path')
+  const distPath = path.join(__dirname, '..', 'client', 'dist')
+  app.use(express.static(distPath, { maxAge: '7d' }))
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'))
+  })
+}
 
 // 错误处理
 app.use((err, req, res, next) => {

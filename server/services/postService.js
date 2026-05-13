@@ -1,5 +1,6 @@
 const { Op } = require('sequelize')
 const { Post, Category, Tag } = require('../models')
+const { sanitize } = require('../utils/sanitize')
 
 class PostService {
   async list(query) {
@@ -93,7 +94,7 @@ class PostService {
   async create(data, userId) {
     const { type, title, content, summary, cover_image, category_id, rating, metadata, status, tags } = data
     const post = await Post.create({
-      type, title, content, summary, cover_image, category_id, rating, metadata,
+      type, title: sanitize(title), content: sanitize(content), summary, cover_image, category_id, rating, metadata,
       status: status || 'draft',
       user_id: userId
     })
@@ -109,7 +110,16 @@ class PostService {
     if (!post) {
       throw Object.assign(new Error('内容不存在'), { status: 404 })
     }
-    await post.update(data)
+    const allowedFields = ['type', 'title', 'content', 'summary', 'cover_image', 'category_id', 'rating', 'metadata', 'status']
+    const filtered = {}
+    allowedFields.forEach(field => {
+      if (data[field] !== undefined) {
+        filtered[field] = field === 'title' || field === 'content' || field === 'summary'
+          ? sanitize(data[field])
+          : data[field]
+      }
+    })
+    await post.update(filtered)
     if (data.tags) {
       const tagInstances = await Tag.findAll({ where: { id: data.tags } })
       await post.setTags(tagInstances)

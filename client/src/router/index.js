@@ -168,11 +168,17 @@ const router = createRouter({
   }
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   // 后台页面需要验证
   if (to.matched.some(r => r.meta.requiresAuth)) {
-    const token = localStorage.getItem('token')
-    if (!token) {
+    const { useAuthStore } = await import('../stores/auth')
+    const auth = useAuthStore()
+
+    if (!auth.checked) {
+      await auth.checkAuth()
+    }
+
+    if (!auth.isLoggedIn) {
       next('/admin/login')
       return
     }

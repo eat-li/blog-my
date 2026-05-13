@@ -2,8 +2,10 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { messageApi } from '../../api'
+import { useConfirm } from '../../composables/useConfirm'
 
 const router = useRouter()
+const { alert: showAlert, confirm } = useConfirm()
 const messages = ref([])
 const total = ref(0)
 const loading = ref(false)
@@ -40,17 +42,17 @@ async function handleReview(id, status) {
     await messageApi.review(id, status)
     fetchMessages()
   } catch (e) {
-    alert(e.response?.data?.message || '操作失败')
+    await showAlert(e.response?.data?.message || '操作失败')
   }
 }
 
 async function handleDelete(id) {
-  if (!confirm('确定删除这条留言？')) return
+  if (!await confirm('确定删除这条留言？')) return
   try {
     await messageApi.delete(id)
     fetchMessages()
   } catch (e) {
-    alert(e.response?.data?.message || '删除失败')
+    await showAlert(e.response?.data?.message || '删除失败')
   }
 }
 

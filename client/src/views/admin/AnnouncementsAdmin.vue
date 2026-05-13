@@ -2,8 +2,10 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { announcementApi } from '../../api'
+import { useConfirm } from '../../composables/useConfirm'
 
 const router = useRouter()
+const { alert: showAlert, confirm } = useConfirm()
 const announcements = ref([])
 const total = ref(0)
 const loading = ref(false)
@@ -61,7 +63,7 @@ function cancelForm() {
 }
 
 async function submitForm() {
-  if (!form.value.content.trim()) return alert('公告内容不能为空')
+  if (!form.value.content.trim()) return await showAlert('公告内容不能为空')
 
   formLoading.value = true
   try {
@@ -74,26 +76,26 @@ async function submitForm() {
     editingId.value = null
     fetchAnnouncements()
   } catch (e) {
-    alert(e.response?.data?.message || '操作失败')
+    await showAlert(e.response?.data?.message || '操作失败')
   } finally {
     formLoading.value = false
   }
 }
 
 async function handleDelete(id) {
-  if (!confirm('确定删除这条公告？')) return
+  if (!await confirm('确定删除这条公告？')) return
   try {
     await announcementApi.delete(id)
     fetchAnnouncements()
   } catch (e) {
-    alert(e.response?.data?.message || '删除失败')
+    await showAlert(e.response?.data?.message || '删除失败')
   }
 }
 
 function toggleActive(item) {
   announcementApi.update(item.id, { is_active: !item.is_active })
     .then(() => fetchAnnouncements())
-    .catch(e => alert(e.response?.data?.message || '操作失败'))
+    .catch(async e => await showAlert(e.response?.data?.message || '操作失败'))
 }
 </script>
 

@@ -27,25 +27,6 @@ class UploadService {
     return { putUrl: url, key, fileUrl: baseUrl ? `${baseUrl}/${key}` : '' }
   }
 
-  async getSignature(dir = 'content/') {
-    const client = this.getOSSClient()
-    const expiration = new Date(Date.now() + 3600 * 1000)
-    const policy = {
-      expiration: expiration.toISOString(),
-      conditions: [['starts-with', '$key', dir]]
-    }
-
-    const formData = await client.calculatePostSignature(policy)
-    const { OSS_BUCKET, OSS_REGION } = process.env
-    return {
-      host: `https://${OSS_BUCKET}.${OSS_REGION}.aliyuncs.com`,
-      policy: formData.policy,
-      signature: formData.Signature,
-      accessKeyId: process.env.OSS_ACCESS_KEY_ID,
-      dir
-    }
-  }
-
   async uploadImage(base64, filename) {
     const buffer = Buffer.from(base64, 'base64')
     const ext = path.extname(filename) || '.png'

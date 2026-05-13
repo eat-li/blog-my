@@ -8,6 +8,7 @@ const loading = ref(true)
 // 申请表单
 const showForm = ref(false)
 const submitting = ref(false)
+const cooldown = ref(0) // 提交冷却倒计时（秒）
 const submitMsg = ref('')
 const submitOk = ref(false)
 const form = reactive({
@@ -65,6 +66,12 @@ async function handleSubmit() {
     form.avatar = ''
     form.signature = ''
     form.url = ''
+    // 启动提交冷却 60 秒
+    cooldown.value = 60
+    const timer = setInterval(() => {
+      cooldown.value--
+      if (cooldown.value <= 0) clearInterval(timer)
+    }, 1000)
   } catch (e) {
     submitOk.value = false
     submitMsg.value = e?.response?.data?.message || '提交失败，请稍后再试'
@@ -206,8 +213,8 @@ function visitLink(link) {
             <button
               type="submit"
               class="apply-submit glass-btn"
-              :disabled="submitting"
-            >{{ submitting ? '提交中…' : '提交申请' }}</button>
+              :disabled="submitting || cooldown > 0"
+            >{{ submitting ? '提交中…' : cooldown > 0 ? `请稍候 ${cooldown}s` : '提交申请' }}</button>
             <button
               type="button"
               class="apply-cancel glass-btn"

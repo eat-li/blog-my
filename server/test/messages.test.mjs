@@ -22,7 +22,7 @@ describe('Messages API', () => {
   beforeEach(() => {
     try {
       const msgService = require('../services/messageService')
-      if (msgService.clearCooldown) msgService.clearCooldown()
+      if (msgService.clearLimiter) msgService.clearLimiter()
     } catch (e) { /* ignore */ }
   })
 

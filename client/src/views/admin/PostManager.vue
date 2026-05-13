@@ -2,8 +2,10 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { postApi } from '../../api'
+import { useConfirm } from '../../composables/useConfirm'
 
 const router = useRouter()
+const { alert: showAlert, confirm } = useConfirm()
 const posts = ref([])
 const total = ref(0)
 const loading = ref(false)
@@ -47,13 +49,13 @@ function formatDate(date) {
 }
 
 async function handleDelete(id) {
-  if (!confirm('确定删除这篇内容吗？')) return
+  if (!await confirm('确定删除这篇内容吗？')) return
   deleting.value = id
   try {
     await postApi.delete(id)
     fetchPosts()
   } catch (e) {
-    alert(e.response?.data?.message || '删除失败')
+    await showAlert(e.response?.data?.message || '删除失败')
   } finally {
     deleting.value = null
   }

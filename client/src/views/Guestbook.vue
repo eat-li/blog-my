@@ -10,6 +10,7 @@ const loading = ref(true)
 
 const form = ref({ nickname: '', email: '', content: '' })
 const submitting = ref(false)
+const cooldown = ref(0) // 提交冷却倒计时（秒）
 const formError = ref('')
 const formSuccess = ref(false)
 const replyTo = ref(null)
@@ -53,6 +54,12 @@ async function submitMessage() {
     setTimeout(() => { formSuccess.value = false }, 3000)
     page.value = 1
     fetchMessages()
+    // 启动提交冷却 30 秒
+    cooldown.value = 30
+    const timer = setInterval(() => {
+      cooldown.value--
+      if (cooldown.value <= 0) clearInterval(timer)
+    }, 1000)
   } catch (e) {
     formError.value = e?.response?.data?.message || '提交失败，请稍后再试'
   } finally {
@@ -133,8 +140,8 @@ const totalPages = () => Math.ceil(total.value / pageSize) || 1
       <div class="form-footer">
         <span class="form-error" v-if="formError">{{ formError }}</span>
         <span class="form-success" v-if="formSuccess">留言提交成功，审核后可见~</span>
-        <button class="glass-btn form-submit" :disabled="submitting" @click="submitMessage">
-          {{ submitting ? '提交中...' : '提交留言' }}
+        <button class="glass-btn form-submit" :disabled="submitting || cooldown > 0" @click="submitMessage">
+          {{ submitting ? '提交中...' : cooldown > 0 ? `请稍候 ${cooldown}s` : '提交留言' }}
         </button>
       </div>
     </div>

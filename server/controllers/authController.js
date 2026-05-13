@@ -3,10 +3,25 @@ const authService = require('../services/authService')
 exports.login = async (req, res, next) => {
   try {
     const result = await authService.login(req.body.username, req.body.password)
-    res.json(result)
+    res.cookie('token', result.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    })
+    res.json({ user: result.user })
   } catch (err) {
     next(err)
   }
+}
+
+exports.logout = async (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  })
+  res.json({ message: '已登出' })
 }
 
 exports.getMe = async (req, res, next) => {

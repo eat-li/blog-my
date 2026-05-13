@@ -8,7 +8,6 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 30 
 
 router.post('/file', authMiddleware, upload.single('file'), uploadController.file)
 router.post('/presigned', authMiddleware, uploadController.presignedUrl)
-router.post('/signature', authMiddleware, uploadController.signature)
 router.post('/image', authMiddleware, uploadController.image)
 router.delete('/image', authMiddleware, uploadController.deleteImage)
 router.post('/audio', authMiddleware, uploadController.audio)

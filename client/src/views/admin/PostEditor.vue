@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useBlogStore } from '../../stores/blog'
 import { postApi, uploadApi } from '../../api'
+import { useConfirm } from '../../composables/useConfirm'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import ImageExtension from '@tiptap/extension-image'
@@ -13,6 +14,7 @@ import UnderlineExtension from '@tiptap/extension-underline'
 const router = useRouter()
 const route = useRoute()
 const blog = useBlogStore()
+const { alert: showAlert, confirm, prompt } = useConfirm()
 const isEdit = !!route.params.id
 
 const form = ref({
@@ -49,7 +51,13 @@ onMounted(async () => {
         rating: post.rating,
         status: post.status,
         tags: post.tags?.map(t => t.id) || [],
-        metadata: post.metadata || { writing_note: { mood: '', bgm: '', weather: '', note: '' } },
+        metadata: {
+          ...(post.metadata || {}),
+          writing_note: {
+            mood: '', bgm: '', weather: '', note: '',
+            ...(post.metadata?.writing_note || {})
+          }
+        },
       }
       editor.value?.commands.setContent(post.content)
     } catch (e) {
@@ -81,7 +89,7 @@ async function handlePasteImage(file) {
     editor.value?.chain().focus().setImage({ src: url }).run()
   } catch (e) {
     console.error('图片上传失败:', e)
-    alert('图片上传失败，请重试')
+    showAlert('图片上传失败，请重试')
   } finally {
     uploadingImage.value = false
   }
@@ -167,11 +175,10 @@ async function handleSave(publish = false) {
 const fileInput = ref(null)
 
 // Toolbar actions
-function addImage() {
-  // 弹出菜单：粘贴 URL 或选文件
-  const choice = confirm('点「确定」输入图片 URL，点「取消」选择文件上传')
+async function addImage() {
+  const choice = await confirm('点「确定」输入图片 URL，点「取消」选择文件上传')
   if (choice) {
-    const url = prompt('输入图片 URL:')
+    const url = await prompt('输入图片 URL:')
     if (url && editor.value) {
       editor.value.chain().focus().setImage({ src: url }).run()
     }
@@ -183,11 +190,11 @@ function addImage() {
 function onFileSelected(e) {
   const file = e.target.files?.[0]
   if (file) handlePasteImage(file)
-  e.target.value = '' // 重置以允许再次选择同一文件
+  e.target.value = ''
 }
 
-function addLink() {
-  const url = prompt('输入链接 URL:')
+async function addLink() {
+  const url = await prompt('输入链接 URL:')
   if (url && editor.value) {
     editor.value.chain().focus().setLink({ href: url }).run()
   }

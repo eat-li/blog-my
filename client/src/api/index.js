@@ -13,6 +13,7 @@ export const postApi = {
 
 export const authApi = {
   login: (data) => request.post('/auth/login', data),
+  logout: () => request.post('/auth/logout'),
   me: () => request.get('/auth/me')
 }
 
@@ -88,7 +89,6 @@ export const uploadApi = {
     onUploadProgress: onProgress
   }),
   presigned: (dir, filename) => request.post('/upload/presigned', { dir, filename }),
-  signature: (dir) => request.post('/upload/signature', { dir }),
   image: (data) => request.post('/upload/image', data),
   delete: (key) => request.delete('/upload/image', { data: { key } }),
   audio: (data) => request.post('/upload/audio', data),

@@ -3,28 +3,36 @@ import request from '../utils/request'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    token: localStorage.getItem('token') || '',
-    user: null
+    user: null,
+    checked: false
   }),
   getters: {
-    isLoggedIn: (state) => !!state.token
+    isLoggedIn: (state) => !!state.user
   },
   actions: {
     async login(username, password) {
       const res = await request.post('/auth/login', { username, password })
-      this.token = res.token
       this.user = res.user
-      localStorage.setItem('token', res.token)
       return res
     },
-    async fetchUser() {
-      const res = await request.get('/auth/me')
-      this.user = res.user
+    async checkAuth() {
+      try {
+        const res = await request.get('/auth/me')
+        this.user = res.user
+      } catch {
+        this.user = null
+      } finally {
+        this.checked = true
+      }
     },
-    logout() {
-      this.token = ''
+    async logout() {
+      try {
+        await request.post('/auth/logout')
+      } catch {
+        // 即使请求失败也要清除本地状态
+      }
       this.user = null
-      localStorage.removeItem('token')
+      this.checked = false
     }
   }
 })

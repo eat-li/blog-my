@@ -20,7 +20,7 @@ exports.getAdmin = async (req, res, next) => {
 
 exports.apply = async (req, res, next) => {
   try {
-    const link = await friendlinkService.apply(req.body)
+    const link = await friendlinkService.apply(req.body, req.ip)
     res.status(201).json({ code: 201, data: link, message: '友链申请已提交，等待审核' })
   } catch (err) {
     next(err)

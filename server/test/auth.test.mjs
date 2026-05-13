@@ -30,8 +30,12 @@ describe('Auth API', () => {
       .post('/api/auth/login')
       .send({ username: 'testadmin', password: 'test123' })
     expect(res.status).toBe(200)
-    expect(res.body.token).toBeDefined()
     expect(res.body.user.username).toBe('testadmin')
+    // 验证 httpOnly cookie 已设置
+    const cookies = res.headers['set-cookie']
+    expect(cookies).toBeDefined()
+    expect(cookies.some(c => c.includes('token='))).toBe(true)
+    expect(cookies.some(c => c.includes('HttpOnly'))).toBe(true)
   })
 
   it('GET /api/auth/me - 未登录返回 401', async () => {
@@ -39,14 +43,24 @@ describe('Auth API', () => {
     expect(res.status).toBe(401)
   })
 
-  it('GET /api/auth/me - 登录后获取用户', async () => {
+  it('GET /api/auth/me - Cookie 登录后获取用户', async () => {
     const loginRes = await request(app)
       .post('/api/auth/login')
       .send({ username: 'testadmin', password: 'test123' })
 
+    const cookies = loginRes.headers['set-cookie']
     const res = await request(app)
       .get('/api/auth/me')
-      .set('Authorization', `Bearer ${loginRes.body.token}`)
+      .set('Cookie', cookies)
+
+    expect(res.status).toBe(200)
+    expect(res.body.user.username).toBe('testadmin')
+  })
+
+  it('GET /api/auth/me - Bearer Token 登录后获取用户', async () => {
+    const res = await request(app)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${testToken}`)
 
     expect(res.status).toBe(200)
     expect(res.body.user.username).toBe('testadmin')

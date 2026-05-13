@@ -1,4 +1,12 @@
 const { FriendLink } = require('../models')
+const RateLimiter = require('../utils/rateLimiter')
+
+// 友链申请频率限制：60秒/1条，1小时/3条，24小时/10条
+const applyLimiter = new RateLimiter([
+  { name: 'short', windowMs: 60_000,   max: 1 },
+  { name: 'mid',   windowMs: 3600_000, max: 3 },
+  { name: 'long',  windowMs: 86400_000, max: 10 }
+])
 
 class FriendLinkService {
   async getPublicList() {
@@ -34,7 +42,15 @@ class FriendLinkService {
     }
   }
 
-  async apply(data) {
+  async apply(data, ip) {
+    // IP 频率限制
+    if (ip) {
+      const rateCheck = applyLimiter.check(ip)
+      if (!rateCheck.allowed) {
+        throw Object.assign(new Error(rateCheck.message), { status: 429 })
+      }
+    }
+
     // 公开申请，强制待审核状态
     return this.create({ ...data, status: 'pending' })
   }

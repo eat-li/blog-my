@@ -2,8 +2,10 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { diaryApi, uploadApi } from '../../api'
+import { useConfirm } from '../../composables/useConfirm'
 
 const router = useRouter()
+const { alert: showAlert, confirm } = useConfirm()
 const diaries = ref([])
 const total = ref(0)
 const loading = ref(false)
@@ -92,7 +94,7 @@ async function handleImageUpload(e) {
       }
     }
   } catch (err) {
-    alert('图片上传失败：' + (err.response?.data?.message || err.message))
+    await showAlert('图片上传失败：' + (err.response?.data?.message || err.message))
   } finally {
     uploadingImages.value = false
     // 清空 input
@@ -105,8 +107,8 @@ function removeImage(index) {
 }
 
 async function submitForm() {
-  if (!form.value.title.trim()) return alert('日记标题不能为空')
-  if (!form.value.content.trim()) return alert('日记内容不能为空')
+  if (!form.value.title.trim()) return await showAlert('日记标题不能为空')
+  if (!form.value.content.trim()) return await showAlert('日记内容不能为空')
 
   formLoading.value = true
   try {
@@ -120,19 +122,19 @@ async function submitForm() {
     editingId.value = null
     fetchDiaries()
   } catch (e) {
-    alert(e.response?.data?.message || '操作失败')
+    await showAlert(e.response?.data?.message || '操作失败')
   } finally {
     formLoading.value = false
   }
 }
 
 async function handleDelete(id) {
-  if (!confirm('确定删除这篇日记？')) return
+  if (!await confirm('确定删除这篇日记？')) return
   try {
     await diaryApi.delete(id)
     fetchDiaries()
   } catch (e) {
-    alert(e.response?.data?.message || '删除失败')
+    await showAlert(e.response?.data?.message || '删除失败')
   }
 }
 

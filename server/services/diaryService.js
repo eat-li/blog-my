@@ -1,4 +1,5 @@
 const { Diary } = require('../models')
+const { sanitize } = require('../utils/sanitize')
 
 class DiaryService {
   // 公开日记列表
@@ -56,8 +57,8 @@ class DiaryService {
     }
 
     return Diary.create({
-      title: data.title.trim(),
-      content: data.content.trim(),
+      title: sanitize(data.title.trim()),
+      content: sanitize(data.content.trim()),
       mood: data.mood || null,
       weather: data.weather || null,
       images: Array.isArray(data.images) ? data.images : [],
@@ -75,8 +76,8 @@ class DiaryService {
     }
 
     await diary.update({
-      title: data.title?.trim(),
-      content: data.content?.trim(),
+      title: data.title ? sanitize(data.title.trim()) : undefined,
+      content: data.content ? sanitize(data.content.trim()) : undefined,
       mood: data.mood,
       weather: data.weather,
       images: data.images,

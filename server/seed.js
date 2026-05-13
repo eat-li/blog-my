@@ -6,16 +6,17 @@ async function seed() {
   await syncDatabase()
 
   // 创建管理员
+  const adminPass = process.env.ADMIN_PASS || 'admin123'
   const [user, created] = await User.findOrCreate({
     where: { username: 'admin' },
     defaults: {
       username: 'admin',
-      password: await bcrypt.hash('admin123', 10),
+      password: await bcrypt.hash(adminPass, 10),
       nickname: '博主'
     }
   })
   if (created) {
-    console.log('管理员账号已创建 (admin / admin123)')
+    console.log('管理员账号已创建')
   } else {
     console.log('管理员账号已存在')
   }

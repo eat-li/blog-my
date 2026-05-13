@@ -1,4 +1,7 @@
 const { Tag } = require('../models')
+const { filterFields } = require('../utils/helpers')
+
+const TAG_FIELDS = ['name']
 
 class TagService {
   async list() {
@@ -6,7 +9,7 @@ class TagService {
   }
 
   async create(data) {
-    return await Tag.create(data)
+    return await Tag.create(filterFields(data, TAG_FIELDS))
   }
 
   async delete(id) {

@@ -7,6 +7,7 @@ import PixelMascot from './components/PixelMascot.vue'
 import PageFlipLoader from './components/PageFlipLoader.vue'
 import EntryLoader from './components/EntryLoader.vue'
 import MusicPlayer from './components/MusicPlayer.vue'
+import ConfirmDialog from './components/ConfirmDialog.vue'
 
 const bgOrbs = ref([
   { x: 20, y: 10, size: 500, color: 'rgba(232, 137, 91, 0.08)', dx: 1, dy: 0.5 },
@@ -69,6 +70,9 @@ onMounted(animateOrbs)
 
     <!-- 像素吉祥物 (全局) -->
     <PixelMascot />
+
+    <!-- 全局确认框 -->
+    <ConfirmDialog />
 
     <!-- 磨砂玻璃装饰条 -->
     <div class="glass-edge glass-edge-t" />

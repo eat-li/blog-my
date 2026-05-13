@@ -18,6 +18,12 @@ export async function createAdminToken(app) {
     .post('/api/auth/login')
     .send({ username: 'testadmin', password: 'test123' })
 
+  // 优先从 httpOnly cookie 获取，兼容旧版响应体中的 token
+  const cookies = res.headers['set-cookie']
+  if (cookies && cookies.length > 0) {
+    const tokenMatch = cookies[0].match(/token=([^;]+)/)
+    if (tokenMatch) return tokenMatch[1]
+  }
   return res.body.token
 }
 
@@ -32,7 +38,7 @@ export async function createTestTag(name = '测试标签') {
 export async function cleanDatabase() {
   try {
     const msgService = require('../services/messageService')
-    if (msgService.clearCooldown) msgService.clearCooldown()
+    if (msgService.clearLimiter) msgService.clearLimiter()
   } catch (e) { /* ignore */ }
 
   await models.sequelize.query('SET FOREIGN_KEY_CHECKS = 0')

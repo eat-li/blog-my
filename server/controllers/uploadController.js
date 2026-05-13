@@ -18,13 +18,6 @@ exports.file = async (req, res, next) => {
   } catch (err) { next(err) }
 }
 
-exports.signature = async (req, res, next) => {
-  try {
-    const result = await uploadService.getSignature(req.body.dir)
-    res.json(result)
-  } catch (err) { next(err) }
-}
-
 exports.image = async (req, res, next) => {
   try {
     const result = await uploadService.uploadImage(req.body.base64, req.body.filename)
