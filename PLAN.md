@@ -399,7 +399,7 @@ OSS_REGION=oss-cn-cehngdu
 OSS_ACCESS_KEY_ID=你的AccessKey
 OSS_ACCESS_KEY_SECRET=你的Secret
 OSS_BUCKET=你的Bucket名称
-OSS_BASE_URL=https://你的Bucket名称.oss-cn-chengdu.aliyuncs.com
+OSS_BASE_URL=https://你的Bucket.oss-cn-地域.aliyuncs.com
 ```
 
 ## 七、Tiptap 编辑器方案
