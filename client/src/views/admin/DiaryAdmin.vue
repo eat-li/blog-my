@@ -20,6 +20,8 @@ const editingId = ref(null)
 const formVisible = ref(false)
 const formLoading = ref(false)
 const uploadingImages = ref(false)
+const uploadProgress = ref(0)
+const uploadProgressText = ref('')
 const form = ref({
   title: '',
   content: '',
@@ -78,8 +80,14 @@ async function handleImageUpload(e) {
   if (!files?.length) return
 
   uploadingImages.value = true
+  uploadProgress.value = 0
+  const total = files.length
+  let completed = 0
+
   try {
     for (const file of files) {
+      uploadProgressText.value = `正在上传 ${completed + 1}/${total}...`
+
       const base64 = await new Promise((resolve, reject) => {
         const reader = new FileReader()
         reader.onload = () => resolve(reader.result)
@@ -92,7 +100,11 @@ async function handleImageUpload(e) {
       if (res?.url) {
         form.value.images.push(res.url)
       }
+
+      completed++
+      uploadProgress.value = Math.round((completed / total) * 100)
     }
+    uploadProgressText.value = '上传完成'
   } catch (err) {
     await showAlert('图片上传失败：' + (err.response?.data?.message || err.message))
   } finally {
@@ -198,8 +210,15 @@ function formatDate(d) {
               </div>
               <label class="da-image-add glass-btn" :class="{ 'da-image-add--loading': uploadingImages }">
                 <input type="file" accept="image/*" multiple hidden @change="handleImageUpload" />
-                <span>{{ uploadingImages ? '上传中...' : '+ 添加图片' }}</span>
+                <span>{{ uploadingImages ? uploadProgressText : '+ 添加图片' }}</span>
               </label>
+            </div>
+            <!-- 上传进度条 -->
+            <div v-if="uploadingImages" class="upload-progress">
+              <div class="progress-bar">
+                <div class="progress-fill" :style="{ width: uploadProgress + '%' }"></div>
+              </div>
+              <span class="progress-text">{{ uploadProgress }}%</span>
             </div>
           </div>
 
@@ -398,6 +417,36 @@ function formatDate(d) {
 .da-image-add--loading {
   opacity: 0.5;
   pointer-events: none;
+}
+
+/* 上传进度条 */
+.upload-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--glass-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--color-accent-galgame);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  min-width: 36px;
+  text-align: right;
 }
 
 .da-check-label {

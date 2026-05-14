@@ -90,8 +90,8 @@ export const uploadApi = {
     onUploadProgress: onProgress
   }),
   presigned: (dir, filename) => request.post('/upload/presigned', { dir, filename }),
-  image: (data) => request.post('/upload/image', data),
+  image: (data) => request.post('/upload/image', data, { timeout: 120000 }),
   delete: (key) => request.delete('/upload/image', { data: { key } }),
-  audio: (data) => request.post('/upload/audio', data),
+  audio: (data) => request.post('/upload/audio', data, { timeout: 300000 }),
   deleteAudio: (key) => request.delete('/upload/audio', { data: { key } })
 }
