@@ -56,7 +56,7 @@ onMounted(async () => {
           <span class="type-badge anime">◉ 动漫</span>
           <h1 class="detail-title">{{ post.title }}</h1>
           <div class="detail-meta">
-            <span>👁️ {{ (post.views || 0).toLocaleString() }} 次阅读</span>
+            <span>{{ (post.views || 0).toLocaleString() }} 次阅读</span>
             <span>{{ formatDate(post.createdAt) }}</span>
           </div>
         </header>

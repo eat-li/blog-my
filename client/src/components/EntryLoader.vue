@@ -16,7 +16,7 @@ onMounted(() => {
 
   // 入场 → 停留 → 退场
   setTimeout(() => { phase.value = 'hold' }, 400)
-  setTimeout(() => { phase.value = 'leave' }, 1800)
+  setTimeout(() => { phase.value = 'leave' }, 3000)
   setTimeout(() => { visible.value = false }, 2400)
 })
 </script>
@@ -33,7 +33,7 @@ onMounted(() => {
 
         <!-- 标题 -->
         <h1 class="entry-title">EatLi</h1>
-        <p class="entry-subtitle">记录技术与日常</p>
+        <p class="entry-subtitle">从前从前，有个人爱你很久，但偏偏，风渐渐，把距离吹得好远</p>
 
         <!-- 进度指示 -->
         <div class="entry-bar">
@@ -107,7 +107,7 @@ onMounted(() => {
 
 .entry-subtitle {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 25px;
   color: var(--color-text-muted);
   text-align: center;
   letter-spacing: 2px;
