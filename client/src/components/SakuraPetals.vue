@@ -1,187 +1,208 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
-// 三种樱花花瓣 SVG
-const petalTypes = [
+const canvasRef = ref(null)
+let animationId = null
+let time = 0
+
+// 检测移动端 — 自动减少花瓣数量
+function isMobile() {
+  return window.innerWidth < 768 || 'ontouchstart' in window
+}
+
+// 三种花瓣类型的配置
+const petalConfigs = [
   {
-    // 经典五瓣樱花 — 俯视
-    viewBox: '0 0 40 40',
-    paths: [
-      { d: 'M20 5 C13 3 4 8 5 18 C6 25 17 28 20 34 C23 28 34 25 35 18 C36 8 27 3 20 5Z', fill: 'url(#pg1)' },
-    ],
-    gradient: { id: 'pg1', stops: [{ o: '0%', c: '#ffe0ee' }, { o: '45%', c: '#f8a0be' }, { o: '100%', c: '#e87096' }] },
+    // 经典五瓣樱花（俯视）
+    draw(ctx, size) {
+      const cx = size / 2, cy = size / 2
+      // 5个花瓣围绕中心
+      for (let i = 0; i < 5; i++) {
+        ctx.save()
+        ctx.translate(cx, cy)
+        ctx.rotate((i / 5) * Math.PI * 2 - Math.PI / 2)
+        ctx.translate(size * 0.22, 0)
+        ctx.beginPath()
+        ctx.ellipse(0, 0, size * 0.18, size * 0.07, 0, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.restore()
+      }
+      // 花蕊
+      ctx.beginPath()
+      ctx.arc(cx, cy, size * 0.06, 0, Math.PI * 2)
+      ctx.fillStyle = '#d4607a'
+      ctx.fill()
+    },
+    gradient: ['#ffe0ee', '#f8a0be', '#e87096'],
   },
   {
-    // 侧视单片花瓣 — 心形
-    viewBox: '0 0 28 36',
-    paths: [
-      { d: 'M14 3 C6 1 1 9 2 17 C3 25 11 31 14 36 C17 31 25 25 26 17 C27 9 22 1 14 3Z', fill: 'url(#pg2)' },
-    ],
-    gradient: { id: 'pg2', stops: [{ o: '0%', c: '#fff0f5' }, { o: '50%', c: '#fbb8d0' }, { o: '100%', c: '#ea88a4' }] },
+    // 侧视单片花瓣（心形）
+    draw(ctx, size) {
+      const cx = size / 2
+      ctx.beginPath()
+      ctx.moveTo(cx, size * 0.65)
+      ctx.bezierCurveTo(cx, size * 0.15, cx - size * 0.42, size * 0.15, cx - size * 0.42, size * 0.45)
+      ctx.bezierCurveTo(cx - size * 0.42, size * 0.65, cx, size * 0.78, cx, size * 0.95)
+      ctx.bezierCurveTo(cx, size * 0.78, cx + size * 0.42, size * 0.65, cx + size * 0.42, size * 0.45)
+      ctx.bezierCurveTo(cx + size * 0.42, size * 0.15, cx, size * 0.15, cx, size * 0.65)
+      ctx.fill()
+    },
+    gradient: ['#fff0f5', '#fbb8d0', '#ea88a4'],
   },
   {
-    // 花苞 — 小巧三瓣
-    viewBox: '0 0 24 24',
-    paths: [
-      { d: 'M12 4 C7 3 3 7 3 12 C3 16 9 19 12 22 C15 19 21 16 21 12 C21 7 17 3 12 4Z', fill: 'url(#pg3)' },
-    ],
-    gradient: { id: 'pg3', stops: [{ o: '0%', c: '#fff5f8' }, { o: '60%', c: '#fcc8da' }, { o: '100%', c: '#f298b4' }] },
+    // 花苞（小巧椭圆 + 尖端）
+    draw(ctx, size) {
+      const cx = size / 2, cy = size / 2
+      ctx.beginPath()
+      ctx.ellipse(cx, cy + size * 0.06, size * 0.38, size * 0.44, 0, 0, Math.PI * 2)
+      ctx.fill()
+      // 小尖端
+      ctx.beginPath()
+      ctx.moveTo(cx, cy - size * 0.3)
+      ctx.lineTo(cx - size * 0.07, cy - size * 0.48)
+      ctx.lineTo(cx + size * 0.07, cy - size * 0.48)
+      ctx.closePath()
+      ctx.fill()
+    },
+    gradient: ['#fff5f8', '#fcc8da', '#f298b4'],
   },
 ]
 
-function createPetals() {
-  const result = []
+// 预渲染花瓣到离屏 Canvas
+const CACHE_SIZE = 60
+function prerenderPetal(type) {
+  const canvas = document.createElement('canvas')
+  canvas.width = CACHE_SIZE
+  canvas.height = CACHE_SIZE
+  const ctx = canvas.getContext('2d')
+
+  const cfg = petalConfigs[type]
+  const cx = CACHE_SIZE / 2, cy = CACHE_SIZE / 2
+  const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, CACHE_SIZE * 0.5)
+  gradient.addColorStop(0, cfg.gradient[0])
+  gradient.addColorStop(0.45, cfg.gradient[1])
+  gradient.addColorStop(1, cfg.gradient[2])
+  ctx.fillStyle = gradient
+
+  cfg.draw(ctx, CACHE_SIZE)
+  return canvas
+}
+
+// 创建所有花瓣数据
+function createPetals(mobile) {
   const layers = [
-    { count: 10, minSize: 8,  maxSize: 14, minDur: 16, maxDur: 24, minDrift: 20,  maxDrift: 50,  opacity: [0.15, 0.35], blur: true },
-    { count: 16, minSize: 14, maxSize: 22, minDur: 12, maxDur: 18, minDrift: 40,  maxDrift: 100, opacity: [0.35, 0.6],  blur: false },
-    { count: 9,  minSize: 20, maxSize: 32, minDur: 8,  maxDur: 14, minDrift: 60,  maxDrift: 160, opacity: [0.5, 0.85],  blur: false },
+    { count: mobile ? 5 : 10, minSize: 8,  maxSize: 14, minSpeed: 0.4, maxSpeed: 0.7, minDrift: 0.02, maxDrift: 0.06, opacity: [0.15, 0.35] },
+    { count: mobile ? 8 : 16, minSize: 14, maxSize: 22, minSpeed: 0.7, maxSpeed: 1.2, minDrift: 0.04, maxDrift: 0.12, opacity: [0.35, 0.6]  },
+    { count: mobile ? 5 : 9,  minSize: 20, maxSize: 32, minSpeed: 1.1, maxSpeed: 1.8, minDrift: 0.06, maxDrift: 0.2,  opacity: [0.5, 0.85]  },
   ]
 
+  const h = window.innerHeight
+  const w = window.innerWidth
+  const petals = []
   let id = 0
+
   layers.forEach((layer) => {
     for (let i = 0; i < layer.count; i++) {
-      result.push({
+      petals.push({
         id: id++,
-        type: Math.floor(Math.random() * petalTypes.length),
-        left: Math.random() * 100,
-        startY: -(Math.random() * 130 + 15),
-        delay: Math.random() * 22,
-        duration: layer.minDur + Math.random() * (layer.maxDur - layer.minDur),
+        type: Math.floor(Math.random() * 3),
+        x: Math.random() * w,
+        y: Math.random() * h * 1.3 - h * 0.15, // 随机分布在屏幕各处
         size: layer.minSize + Math.random() * (layer.maxSize - layer.minSize),
+        speedY: layer.minSpeed + Math.random() * (layer.maxSpeed - layer.minSpeed),
+        driftX: (Math.random() > 0.5 ? 1 : -1) * (layer.minDrift + Math.random() * (layer.maxDrift - layer.minDrift)),
+        rotation: Math.random() * Math.PI * 2,
+        spinSpeed: (Math.random() > 0.5 ? 1 : -1) * (0.003 + Math.random() * 0.025),
         opacity: layer.opacity[0] + Math.random() * (layer.opacity[1] - layer.opacity[0]),
-        rotation: 360 + Math.random() * 900,
-        spinDir: Math.random() > 0.5 ? 1 : -1,
-        drift: layer.minDrift + Math.random() * (layer.maxDrift - layer.minDrift),
-        sway: 12 + Math.random() * 50,
-        blur: layer.blur && Math.random() > 0.5,
-        swayAnim: Math.floor(Math.random() * 3),
+        swayAmp: 8 + Math.random() * 42,
+        swaySpeed: 0.8 + Math.random() * 2.2,
+        swayPhase: Math.random() * Math.PI * 2,
       })
     }
   })
-  return result
+  return petals
 }
 
-const petals = ref(createPetals())
-const allGradients = petalTypes.map(t => t.gradient)
+// --- 生命周期 ---
+
+onMounted(() => {
+  const canvas = canvasRef.value
+  if (!canvas) return
+
+  const ctx = canvas.getContext('2d')
+  const mobile = isMobile()
+  const petalCache = [0, 1, 2].map(i => prerenderPetal(i))
+  const petals = createPetals(mobile)
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2) // 限制 DPR 避免移动端性能问题
+    canvas.width = window.innerWidth * dpr
+    canvas.height = window.innerHeight * dpr
+    canvas.style.width = window.innerWidth + 'px'
+    canvas.style.height = window.innerHeight + 'px'
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  }
+
+  resize()
+  window.addEventListener('resize', resize)
+
+  function animate() {
+    time += 1 / 60
+    const w = window.innerWidth
+    const h = window.innerHeight
+
+    ctx.clearRect(0, 0, w, h)
+
+    for (let i = 0; i < petals.length; i++) {
+      const p = petals[i]
+
+      // 更新位置
+      p.y += p.speedY
+      const sway = Math.sin(time * p.swaySpeed + p.swayPhase) * p.swayAmp
+      p.x += p.driftX + sway * 0.03
+      p.rotation += p.spinSpeed
+
+      // 超出底部 — 回收到顶部
+      if (p.y > h + p.size * 2) {
+        p.y = -(p.size * 2 + Math.random() * h * 0.3)
+        p.x = Math.random() * w
+        p.rotation = Math.random() * Math.PI * 2
+      }
+      // 超出左右边界 — 回绕
+      if (p.x > w + p.size) p.x = -p.size
+      if (p.x < -p.size) p.x = w + p.size
+
+      // 绘制花瓣
+      ctx.save()
+      ctx.globalAlpha = p.opacity
+      ctx.translate(p.x + sway, p.y)
+      ctx.rotate(p.rotation)
+      const s = p.size
+      ctx.drawImage(petalCache[p.type], -s / 2, -s * 0.62, s, s * 1.25)
+      ctx.restore()
+    }
+
+    animationId = requestAnimationFrame(animate)
+  }
+
+  animationId = requestAnimationFrame(animate)
+
+  onUnmounted(() => {
+    cancelAnimationFrame(animationId)
+    window.removeEventListener('resize', resize)
+  })
+})
 </script>
 
 <template>
-  <div class="sakura-container" aria-hidden="true">
-    <!-- SVG 渐变定义 -->
-    <svg style="position:absolute;width:0;height:0" aria-hidden="true">
-      <defs>
-        <radialGradient v-for="g in allGradients" :key="g.id" :id="g.id" cx="50%" cy="30%" r="70%">
-          <stop v-for="(s, si) in g.stops" :key="si" :offset="s.o" :stop-color="s.c" />
-        </radialGradient>
-      </defs>
-    </svg>
-
-    <!-- 花瓣 -->
-    <div
-      v-for="p in petals"
-      :key="p.id"
-      class="sakura-petal"
-      :style="{
-        left: p.left + '%',
-        top: p.startY + 'px',
-        animationDelay: p.delay + 's',
-        animationDuration: p.duration + 's',
-        '--rotate': (p.rotation * p.spinDir) + 'deg',
-        '--drift': p.drift + 'px',
-        filter: p.blur ? 'blur(1.5px)' : 'none',
-      }"
-    >
-      <span
-        class="petal-inner"
-        :class="'sway-' + p.swayAnim"
-        :style="{ '--sway': p.sway + 'px' }"
-      >
-        <svg
-          :viewBox="petalTypes[p.type].viewBox"
-          :width="p.size"
-          :height="p.size * 1.25"
-          :style="{ opacity: p.opacity }"
-        >
-          <path
-            v-for="(pt, pti) in petalTypes[p.type].paths"
-            :key="pti"
-            :d="pt.d"
-            :fill="pt.fill"
-          />
-        </svg>
-      </span>
-    </div>
-  </div>
+  <canvas ref="canvasRef" class="sakura-canvas" aria-hidden="true" />
 </template>
 
 <style scoped>
-.sakura-container {
+.sakura-canvas {
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 9998;
-  overflow: hidden;
-}
-
-/* 外层：下落 + 旋转 + 水平漂移 */
-.sakura-petal {
-  position: absolute;
-  will-change: transform;
-  animation: petalFall linear infinite;
-}
-
-/* 内层：左右摇摆（transform 不触发布局） */
-.petal-inner {
-  display: block;
-  will-change: transform;
-  filter: drop-shadow(0 1px 3px rgba(180, 100, 120, 0.12));
-}
-
-/* === 下落动画 === */
-@keyframes petalFall {
-  0%   { transform: translateY(0) rotate(0deg) translateX(0); }
-  12%  { transform: translateY(12vh) rotate(calc(var(--rotate) * 0.15)) translateX(calc(var(--drift) * 0.2)); }
-  28%  { transform: translateY(28vh) rotate(calc(var(--rotate) * 0.35)) translateX(calc(var(--drift) * 0.45)); }
-  44%  { transform: translateY(44vh) rotate(calc(var(--rotate) * 0.52)) translateX(calc(var(--drift) * 0.25)); }
-  58%  { transform: translateY(58vh) rotate(calc(var(--rotate) * 0.66)) translateX(calc(var(--drift) * 0.65)); }
-  72%  { transform: translateY(72vh) rotate(calc(var(--rotate) * 0.8)) translateX(calc(var(--drift) * 0.4)); }
-  86%  { transform: translateY(86vh) rotate(calc(var(--rotate) * 0.93)) translateX(calc(var(--drift) * 0.7)); }
-  100% { transform: translateY(105vh) rotate(var(--rotate)) translateX(calc(var(--drift) * 0.5)); }
-}
-
-/* === 三种摇摆 === */
-/* 模式0：缓弧线 */
-.sway-0 {
-  animation: sway0 5s cubic-bezier(0.45, 0, 0.55, 1) infinite;
-}
-@keyframes sway0 {
-  0%   { transform: translateX(0); }
-  30%  { transform: translateX(var(--sway)); }
-  65%  { transform: translateX(calc(var(--sway) * -0.6)); }
-  100% { transform: translateX(calc(var(--sway) * 0.15)); }
-}
-
-/* 模式1：快速细颤 */
-.sway-1 {
-  animation: sway1 3.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-@keyframes sway1 {
-  0%   { transform: translateX(0); }
-  22%  { transform: translateX(calc(var(--sway) * -0.8)); }
-  48%  { transform: translateX(calc(var(--sway) * 0.5)); }
-  72%  { transform: translateX(calc(var(--sway) * -0.3)); }
-  100% { transform: translateX(0); }
-}
-
-/* 模式2：不对称偏漂 */
-.sway-2 {
-  animation: sway2 6.5s cubic-bezier(0.35, 0, 0.65, 1) infinite;
-}
-@keyframes sway2 {
-  0%   { transform: translateX(0); }
-  28%  { transform: translateX(calc(var(--sway) * 0.75)); }
-  52%  { transform: translateX(calc(var(--sway) * -1.0)); }
-  78%  { transform: translateX(calc(var(--sway) * 0.4)); }
-  100% { transform: translateX(calc(var(--sway) * -0.1)); }
 }
 </style>
