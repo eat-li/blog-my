@@ -86,6 +86,7 @@ export const diaryApi = {
 export const uploadApi = {
   file: (formData, onProgress) => request.post('/upload/file', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 300000,
     onUploadProgress: onProgress
   }),
   presigned: (dir, filename) => request.post('/upload/presigned', { dir, filename }),
