@@ -5,11 +5,12 @@ import { useOssUpload } from '../../composables/useOssUpload'
 
 const {
   activeTab, saving, loadError, successMsg, tabs,
-  siteInfo, socialLinks, newSocial, githubConfig, live2d, music,
+  siteInfo, socialLinks, newSocial, githubConfig, aboutPage, music,
   loadAll,
   saveSite, addSocial, removeSocial, saveSocial,
-  saveGithub, saveLive2d,
+  saveGithub,
   addSong, removeSong, saveMusic,
+  saveAbout,
 } = useSettings()
 
 onMounted(loadAll)
@@ -171,35 +172,110 @@ async function handleCoverUpload(event, index) {
       </button>
     </div>
 
-    <!-- ===== Live2D ===== -->
-    <div v-if="activeTab === 'live2d'" class="tab-content">
-      <div class="set-field-row">
-        <div class="set-field" style="flex:1">
-          <label>模型</label>
-          <input v-model="live2d.model" class="glass-input" />
+    <!-- ===== 关于页面 ===== -->
+    <div v-if="activeTab === 'about'" class="tab-content">
+      <!-- 欢迎区 -->
+      <div class="about-section-edit">
+        <h4 class="about-section-title">01 · 欢迎区</h4>
+        <div class="set-field">
+          <label>标题</label>
+          <input v-model="aboutPage.welcome.heading" class="glass-input" />
         </div>
-        <div class="set-field" style="flex:1">
-          <label>缩放</label>
-          <input v-model.number="live2d.scale" class="glass-input" type="number" step="0.1" min="0.5" max="2" />
-        </div>
-        <div class="set-field" style="flex:1">
-          <label>位置</label>
-          <select v-model="live2d.position" class="glass-input">
-            <option value="right">右侧</option>
-            <option value="left">左侧</option>
-          </select>
+        <div class="set-field">
+          <label>段落内容</label>
+          <div v-for="(p, i) in aboutPage.welcome.paragraphs" :key="i" class="set-field-row-small">
+            <textarea v-model="aboutPage.welcome.paragraphs[i]" class="glass-input" rows="2" />
+            <button class="glass-btn social-remove" @click="aboutPage.welcome.paragraphs.splice(i, 1)">✕</button>
+          </div>
+          <button class="glass-btn add-text-btn" @click="aboutPage.welcome.paragraphs.push('')">+ 添加段落</button>
         </div>
       </div>
-      <div v-for="key in ['welcome', 'click', 'idle', 'night', 'pageSwitch']" :key="key" class="set-field">
-        <label class="capitalize">{{ key }}</label>
-        <div v-for="(text, i) in live2d[key]" :key="i" class="set-field-row-small">
-          <input v-model="live2d[key][i]" class="glass-input" />
-          <button class="glass-btn social-remove" @click="live2d[key].splice(i, 1)">✕</button>
+
+      <!-- 网站技术 -->
+      <div class="about-section-edit">
+        <h4 class="about-section-title">02 · 网站技术搭建</h4>
+        <div class="set-field">
+          <label>标题</label>
+          <input v-model="aboutPage.siteTech.heading" class="glass-input" />
         </div>
-        <button class="glass-btn add-text-btn" @click="live2d[key].push('')">+ 添加</button>
+        <div class="set-field">
+          <label>介绍文字</label>
+          <textarea v-model="aboutPage.siteTech.intro" class="glass-input" rows="2" />
+        </div>
+        <div class="set-field">
+          <label>技术规格</label>
+          <div v-for="(spec, i) in aboutPage.siteTech.specs" :key="i" class="set-field-row-small">
+            <input v-model="spec.label" class="glass-input" placeholder="标签" style="flex:1" />
+            <input v-model="spec.value" class="glass-input" placeholder="值" style="flex:2" />
+            <button class="glass-btn social-remove" @click="aboutPage.siteTech.specs.splice(i, 1)">✕</button>
+          </div>
+          <button class="glass-btn add-text-btn" @click="aboutPage.siteTech.specs.push({ label: '', value: '' })">+ 添加规格</button>
+        </div>
+        <div class="set-field">
+          <label>备注文字</label>
+          <textarea v-model="aboutPage.siteTech.note" class="glass-input" rows="2" />
+        </div>
       </div>
-      <button class="glass-btn set-save-btn" @click="saveLive2d" :disabled="saving">
-        {{ saving ? '保存中…' : '保存设置' }}
+
+      <!-- 关于我 -->
+      <div class="about-section-edit">
+        <h4 class="about-section-title">03 · 关于我自己</h4>
+        <div class="set-field">
+          <label>标题</label>
+          <input v-model="aboutPage.aboutMe.heading" class="glass-input" />
+        </div>
+        <div class="set-field">
+          <label>段落内容（第一段会拼接站点描述）</label>
+          <div v-for="(p, i) in aboutPage.aboutMe.paragraphs" :key="i" class="set-field-row-small">
+            <textarea v-model="aboutPage.aboutMe.paragraphs[i]" class="glass-input" rows="2" />
+            <button class="glass-btn social-remove" @click="aboutPage.aboutMe.paragraphs.splice(i, 1)">✕</button>
+          </div>
+          <button class="glass-btn add-text-btn" @click="aboutPage.aboutMe.paragraphs.push('')">+ 添加段落</button>
+        </div>
+      </div>
+
+      <!-- 个人感悟 -->
+      <div class="about-section-edit">
+        <h4 class="about-section-title">04 · 个人感悟</h4>
+        <div class="set-field">
+          <label>标题</label>
+          <input v-model="aboutPage.reflections.heading" class="glass-input" />
+        </div>
+        <div class="set-field">
+          <label>段落内容</label>
+          <div v-for="(p, i) in aboutPage.reflections.paragraphs" :key="i" class="set-field-row-small">
+            <textarea v-model="aboutPage.reflections.paragraphs[i]" class="glass-input" rows="2" />
+            <button class="glass-btn social-remove" @click="aboutPage.reflections.paragraphs.splice(i, 1)">✕</button>
+          </div>
+          <button class="glass-btn add-text-btn" @click="aboutPage.reflections.paragraphs.push('')">+ 添加段落</button>
+        </div>
+      </div>
+
+      <!-- 技术栈 -->
+      <div class="about-section-edit">
+        <h4 class="about-section-title">05 · 个人技术栈</h4>
+        <div class="set-field">
+          <label>标题</label>
+          <input v-model="aboutPage.techStack.heading" class="glass-input" />
+        </div>
+        <div class="set-field">
+          <label>介绍文字</label>
+          <input v-model="aboutPage.techStack.intro" class="glass-input" />
+        </div>
+        <div class="set-field">
+          <label>技术项</label>
+          <div v-for="(item, i) in aboutPage.techStack.items" :key="i" class="set-field-row-small">
+            <input v-model="item.name" class="glass-input" placeholder="名称" style="flex:2" />
+            <input v-model="item.desc" class="glass-input" placeholder="描述" style="flex:3" />
+            <input v-model="item.color" class="glass-input" placeholder="颜色" style="flex:1; min-width:80px" type="color" />
+            <button class="glass-btn social-remove" @click="aboutPage.techStack.items.splice(i, 1)">✕</button>
+          </div>
+          <button class="glass-btn add-text-btn" @click="aboutPage.techStack.items.push({ name: '', desc: '', color: '#888888' })">+ 添加技术</button>
+        </div>
+      </div>
+
+      <button class="glass-btn set-save-btn" @click="saveAbout" :disabled="saving">
+        {{ saving ? '保存中…' : '保存关于页面' }}
       </button>
     </div>
 
@@ -556,6 +632,22 @@ async function handleCoverUpload(event, index) {
 }
 
 .capitalize { text-transform: capitalize; }
+
+/* 关于页面编辑 */
+.about-section-edit {
+  padding: 16px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+}
+.about-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--glass-border);
+}
 
 @media (max-width: 768px) {
   .set-field-row {

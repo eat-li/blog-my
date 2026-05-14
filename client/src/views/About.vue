@@ -6,6 +6,7 @@ const siteInfo = ref(null)
 const socialLinks = ref({})
 const stats = ref(null)
 const heatmap = ref({})
+const aboutPage = ref(null)
 const loading = ref(true)
 
 const socialIcons = {
@@ -28,6 +29,7 @@ onMounted(async () => {
     ])
     siteInfo.value = config.site_info || null
     socialLinks.value = config.social_links || {}
+    aboutPage.value = config.about_page || null
     stats.value = statsRes.data || statsRes || null
     heatmap.value = heatmapRes.heatmap || {}
   } catch (e) { /* ignore */ }
@@ -44,23 +46,10 @@ function getHeatColor(count) {
   return 'rgba(139, 69, 19, 0.7)'
 }
 
-// 技术栈数据
-const techStack = [
-  
-  { name: 'Vue 3', desc: '前端框架，组合式 API + Vite 构建', color: '#41b883' },
-  { name: 'Express 5', desc: '后端框架，三层分层架构', color: '#888' },
-  { name: 'MySQL', desc: '关系型数据库，Sequelize ORM', color: '#4479A1' },
-  { name: '阿里云 OSS', desc: '对象存储，图片音频上传', color: '#FF6A00' },
-  { name: 'Pinia', desc: '状态管理，Token 鉴权', color: '#f0b400' },
-  { name: 'Axios', desc: 'HTTP 请求，拦截器封装', color: '#5A29E4' },
-]
-
-const siteTech = [
-  { label: '设计风格', value: '磨砂玻璃 Glassmorphism' },
-  { label: '动画特效', value: '落樱飘落、翻页加载、像素吉祥物' },
-  { label: '部署方式', value: '前后端分离，Vite 代理开发' },
-  { label: '认证方案', value: 'JWT Bearer Token + 路由守卫' },
-]
+// 从 aboutPage 配置取对应 section，fallback 到空对象
+function getSection(name) {
+  return (aboutPage.value && aboutPage.value[name]) ? aboutPage.value[name] : {}
+}
 </script>
 
 <template>
@@ -90,12 +79,10 @@ const siteTech = [
       <section class="about-section glass-card">
         <h2 class="section-heading">
           <span class="section-num">01</span>
-          欢迎来到我的小站
+          {{ getSection('welcome').heading || '欢迎来到我的小站' }}
         </h2>
         <div class="section-body">
-          <p>欢迎来到 EatLi 的博客，一个记录技术成长与二次元生活的小角落。</p>
-          <p>这里有前端开发的技术沉淀，也有动漫和 Galgame 的观后感，每一篇文章都是我用心写下的笔记。希望你能在这里找到感兴趣的內容，无论是代码还是故事。</p>
-          <p>如果有什么想说的，欢迎去留言板留下足迹。</p>
+          <p v-for="(text, i) in (getSection('welcome').paragraphs || [])" :key="i">{{ text }}</p>
         </div>
       </section>
 
@@ -103,17 +90,17 @@ const siteTech = [
       <section class="about-section glass-card">
         <h2 class="section-heading">
           <span class="section-num">02</span>
-          网站技术搭建
+          {{ getSection('siteTech').heading || '网站技术搭建' }}
         </h2>
         <div class="section-body">
-          <p>本站采用前后端分离架构，前端基于 Vue 3 + Vite 构建，后端基于 Express 5 + Sequelize + MySQL，文件存储使用阿里云 OSS。</p>
-          <div class="tech-specs">
-            <div v-for="item in siteTech" :key="item.label" class="tech-spec">
+          <p>{{ getSection('siteTech').intro || '' }}</p>
+          <div class="tech-specs" v-if="getSection('siteTech').specs?.length">
+            <div v-for="item in getSection('siteTech').specs" :key="item.label" class="tech-spec">
               <span class="spec-label">{{ item.label }}</span>
               <span class="spec-value">{{ item.value }}</span>
             </div>
           </div>
-          <p class="section-note">整体 UI 采用磨砂玻璃（Glassmorphism）设计系统，温暖复古配色，配合落樱飘落、翻页加载等交互细节，营造一个舒适复古的个人空間。</p>
+          <p class="section-note" v-if="getSection('siteTech').note">{{ getSection('siteTech').note }}</p>
         </div>
       </section>
 
@@ -121,12 +108,11 @@ const siteTech = [
       <section class="about-section glass-card">
         <h2 class="section-heading">
           <span class="section-num">03</span>
-          关于我自己
+          {{ getSection('aboutMe').heading || '关于我自己' }}
         </h2>
         <div class="section-body">
-          <p>{{ siteInfo?.description || '一个热爱前端开发的宅男，喜欢研究新奇的 Web 技术，也沉迷于优秀的故事作品。' }}</p>
-          <p>工作之余最大的爱好就是推 Galgame 和追番，尤其偏爱 Key 社的催泪作品和芳文社的日常番。每年都会认真挑选几部新作来写感想，这已经成为生活中不可或缺的一部分。</p>
-          <p>技术方面，目前专注于 Vue 生态和 Node.js 后端开发，对 UI 设计和交互体验有较高的追求，喜欢打磨细节。</p>
+          <p>{{ siteInfo?.description || '一个热爱前端开发的宅男。' }}</p>
+          <p v-for="(text, i) in (getSection('aboutMe').paragraphs || [])" :key="'me'+i">{{ text }}</p>
         </div>
       </section>
 
@@ -160,12 +146,10 @@ const siteTech = [
       <section class="about-section glass-card">
         <h2 class="section-heading">
           <span class="section-num">04</span>
-          个人感悟
+          {{ getSection('reflections').heading || '个人感悟' }}
         </h2>
         <div class="section-body">
-          <p>写博客是一件需要坚持的事情。每写完一篇文章，都感觉自己又沉淀了一些東西。技术文章帮助自己梳理知识体系，动漫和 Galgame 的感想则是对美好作品的致敬。</p>
-          <p>一个好的故事能改变一个人看待世界的方式。Key 社的作品教会我「即使结局注定悲伤，过程依然值得珍惜」；日常番则提醒我「平凡的日子也可以闪闪发光」。</p>
-          <p>写代码也是如此 — 好的代码不只是功能的堆砌，更是对细节的尊重。从 UI 的交互动效到后端的分层架构，每一个决策背后都代表着一种审美。</p>
+          <p v-for="(text, i) in (getSection('reflections').paragraphs || [])" :key="'ref'+i">{{ text }}</p>
         </div>
       </section>
 
@@ -173,13 +157,13 @@ const siteTech = [
       <section class="about-section glass-card">
         <h2 class="section-heading">
           <span class="section-num">05</span>
-          个人技术栈
+          {{ getSection('techStack').heading || '个人技术栈' }}
         </h2>
         <div class="section-body">
-          <p>以下是我目前主要使用的技术和工具，持续学习中。</p>
-          <div class="stack-grid">
-            <div v-for="tech in techStack" :key="tech.name" class="stack-item">
-              <span class="stack-dot" :style="{ background: tech.color }" />
+          <p>{{ getSection('techStack').intro || '' }}</p>
+          <div class="stack-grid" v-if="getSection('techStack').items?.length">
+            <div v-for="tech in getSection('techStack').items" :key="tech.name" class="stack-item">
+              <span class="stack-dot" :style="{ background: tech.color || '#888' }" />
               <div class="stack-info">
                 <span class="stack-name">{{ tech.name }}</span>
                 <span class="stack-desc">{{ tech.desc }}</span>

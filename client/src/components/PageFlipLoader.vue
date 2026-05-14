@@ -7,7 +7,7 @@ const { isFliping, phase, currentText } = usePageTransition()
 <template>
   <transition name="loader-fade">
     <div v-if="isFliping" class="pageflip-overlay" :class="'phase-' + phase">
-      <!-- 翻卷角 (右下角卷起效果) -->
+      <!-- 翻卷角（使用 clip-path + transform 替代 border-width，避免触发布局） -->
       <div class="flip-corner">
         <div class="corner-fold" />
         <div class="corner-shadow" />
@@ -56,36 +56,36 @@ const { isFliping, phase, currentText } = usePageTransition()
   position: absolute;
   right: 0;
   bottom: 0;
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 0;
-  border-color: transparent transparent var(--color-bg-start) transparent;
+  width: 250px;
+  height: 250px;
+  background: var(--color-bg-start);
+  clip-path: polygon(100% 100%, 100% 0%, 0% 100%);
+  transform-origin: right bottom;
   filter: drop-shadow(-6px -6px 16px rgba(0, 0, 0, 0.06));
   animation: cornerFold 0.5s ease-in-out forwards;
 }
 
 @keyframes cornerFold {
-  0%   { border-width: 0 0 0 0; }
-  100% { border-width: 0 0 250px 250px; }
+  0%   { transform: scale(0); }
+  100% { transform: scale(1); }
 }
 
 .corner-shadow {
   position: absolute;
   right: 0;
   bottom: 0;
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 0;
-  border-color: transparent transparent rgba(0, 0, 0, 0.02) transparent;
+  width: 260px;
+  height: 260px;
+  background: rgba(0, 0, 0, 0.02);
+  clip-path: polygon(100% 100%, 100% 0%, 0% 100%);
+  transform-origin: right bottom;
   animation: cornerShadow 0.6s ease-in-out forwards;
 }
 
 @keyframes cornerShadow {
-  0%   { border-width: 0 0 0 0; }
-  60%  { border-width: 0 0 260px 260px; }
-  100% { border-width: 0 0 260px 260px; opacity: 0; }
+  0%   { transform: scale(0); }
+  60%  { transform: scale(1); }
+  100% { transform: scale(1); opacity: 0; }
 }
 
 /* 加载中心 */
@@ -156,8 +156,8 @@ const { isFliping, phase, currentText } = usePageTransition()
 }
 
 @keyframes cornerUnfold {
-  0%   { border-width: 0 0 250px 250px; }
-  100% { border-width: 0 0 0 0; }
+  0%   { transform: scale(1); }
+  100% { transform: scale(0); }
 }
 
 .phase-unfold .corner-shadow {

@@ -10,6 +10,29 @@ import ImageExtension from '@tiptap/extension-image'
 import LinkExtension from '@tiptap/extension-link'
 import PlaceholderExtension from '@tiptap/extension-placeholder'
 import UnderlineExtension from '@tiptap/extension-underline'
+import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table'
+import { marked } from 'marked'
+
+marked.setOptions({ breaks: true, gfm: true })
+
+// 检测文本是否包含 Markdown 语法
+function looksLikeMarkdown(text) {
+  const mdPatterns = [
+    /^#{1,6}\s/m,
+    /\*\*[^*]+\*\*/,
+    /__[^_]+__/,
+    /\[.*\]\(.*\)/,
+    /^\s*[-*+]\s/m,
+    /^\s*\d+\.\s/m,
+    /^>\s/m,
+    /```/,
+    /`[^`]+`/,
+    /!\[.*\]\(.*\)/,
+    /~~[^~]+~~/,
+    /^\|.*\|/m,
+  ]
+  return mdPatterns.some(p => p.test(text))
+}
 
 const router = useRouter()
 const route = useRoute()
@@ -106,20 +129,34 @@ const editor = useEditor({
     LinkExtension.configure({ openOnClick: false }),
     PlaceholderExtension.configure({ placeholder: '开始写吧…' }),
     UnderlineExtension,
+    Table.configure({ resizable: true }),
+    TableRow,
+    TableCell,
+    TableHeader,
   ],
   onUpdate: ({ editor }) => { form.value.content = editor.getHTML() },
   onCreate: ({ editor }) => {
     const dom = editor.view.dom
-    // 粘贴图片
+    // 粘贴图片 + Markdown 识别
     dom.addEventListener('paste', (event) => {
-      const items = event.clipboardData?.items
-      if (!items) return
-      for (const item of items) {
+      const clipboard = event.clipboardData
+      if (!clipboard) return
+
+      // 优先处理图片粘贴
+      for (const item of clipboard.items) {
         if (item.type?.startsWith('image/')) {
           event.preventDefault()
           handlePasteImage(item.getAsFile())
           return
         }
+      }
+
+      // 如果没有 HTML 内容，且纯文本包含 Markdown 语法，转换为 HTML 再插入
+      const html = clipboard.getData('text/html')
+      const plain = clipboard.getData('text/plain')
+      if (!html && plain && looksLikeMarkdown(plain)) {
+        event.preventDefault()
+        editor.commands.insertContent(marked.parse(plain))
       }
     })
     // 拖拽图片
@@ -199,6 +236,23 @@ async function addLink() {
     editor.value.chain().focus().setLink({ href: url }).run()
   }
 }
+
+// 表格尺寸选择
+const showTablePicker = ref(false)
+const tablePickerCols = ref(4)
+const tablePickerRows = ref(3)
+
+function openTablePicker() {
+  showTablePicker.value = true
+}
+
+function insertTable() {
+  if (!editor.value) return
+  editor.value.chain().focus()
+    .insertTable({ rows: tablePickerRows.value, cols: tablePickerCols.value, withHeaderRow: true })
+    .run()
+  showTablePicker.value = false
+}
 </script>
 
 <template>
@@ -249,6 +303,18 @@ async function addLink() {
       <span class="tb-sep" />
       <button class="tb-btn" @click="addImage" title="插入图片">🖼</button>
       <button class="tb-btn" @click="addLink" title="插入链接">🔗</button>
+      <button class="tb-btn" @click="openTablePicker" title="插入表格">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+      </button>
+      <!-- 表格尺寸选择器 -->
+      <div v-if="showTablePicker" class="tb-table-picker glass-card">
+        <div class="tp-row">
+          <label>列: <input v-model.number="tablePickerCols" type="number" min="1" max="10" class="tp-input" /></label>
+          <label>行: <input v-model.number="tablePickerRows" type="number" min="1" max="20" class="tp-input" /></label>
+        </div>
+        <button class="glass-btn tp-insert-btn" @click="insertTable">插入表格</button>
+        <button class="glass-btn tp-cancel-btn" @click="showTablePicker = false">取消</button>
+      </div>
       <!-- 隐藏的文件选择器 -->
       <input ref="fileInput" type="file" accept="image/*" style="display:none" @change="onFileSelected" />
     </div>
@@ -361,6 +427,7 @@ async function addLink() {
 
 /* 工具栏 */
 .pe-toolbar {
+  position: relative;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -553,6 +620,97 @@ async function addLink() {
 
 .pe-btn-publish:hover {
   background: var(--color-primary-light);
+}
+
+/* 表格选择器 */
+.tb-table-picker {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 6px;
+  padding: 12px 16px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 180px;
+}
+
+.tp-row {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.tp-input {
+  width: 48px;
+  padding: 4px 6px;
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+  background: var(--glass-bg);
+  color: var(--color-text);
+  font-size: 13px;
+  text-align: center;
+}
+
+.tp-insert-btn {
+  font-size: 13px;
+  padding: 6px 0;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.tp-cancel-btn {
+  font-size: 12px;
+  padding: 4px 0;
+}
+
+/* 编辑器内表格 */
+.editor-content :deep(.ProseMirror table) {
+  border-collapse: collapse;
+  margin: 1em 0;
+  width: 100%;
+  font-size: 14px;
+}
+
+.editor-content :deep(.ProseMirror th) {
+  background: rgba(139, 69, 19, 0.1);
+  font-weight: 600;
+  text-align: left;
+  padding: 10px 14px;
+  border: 1px solid var(--glass-border);
+}
+
+.editor-content :deep(.ProseMirror td) {
+  padding: 8px 14px;
+  border: 1px solid var(--glass-border);
+  vertical-align: top;
+}
+
+.editor-content :deep(.ProseMirror th p),
+.editor-content :deep(.ProseMirror td p) {
+  margin: 0;
+}
+
+.editor-content :deep(.ProseMirror .selectedCell) {
+  background: rgba(139, 69, 19, 0.06);
+}
+
+.editor-content :deep(.ProseMirror .column-resize-handle) {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -2px;
+  width: 4px;
+  background: var(--color-primary);
+  opacity: 0;
+  pointer-events: auto;
+  cursor: col-resize;
+}
+
+.editor-content :deep(.ProseMirror table:hover .column-resize-handle) {
+  opacity: 0.3;
 }
 
 @media (max-width: 768px) {

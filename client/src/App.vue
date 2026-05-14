@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import AppHeader from './components/AppHeader.vue'
 import AppFooter from './components/AppFooter.vue'
 import SakuraPetals from './components/SakuraPetals.vue'
@@ -15,6 +15,8 @@ const bgOrbs = ref([
   { x: 50, y: 80, size: 450, color: 'rgba(232, 91, 91, 0.05)', dx: 0.6, dy: -0.4 },
 ])
 
+let rafId = null
+
 function animateOrbs() {
   bgOrbs.value.forEach(orb => {
     orb.x += orb.dx * 0.03
@@ -22,10 +24,27 @@ function animateOrbs() {
     if (orb.x < -10 || orb.x > 110) orb.dx *= -1
     if (orb.y < -10 || orb.y > 110) orb.dy *= -1
   })
-  requestAnimationFrame(animateOrbs)
+  rafId = requestAnimationFrame(animateOrbs)
 }
 
-onMounted(animateOrbs)
+// 页面隐藏时暂停动画，节省资源
+function onVisibilityChange() {
+  if (document.hidden) {
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null }
+  } else {
+    if (!rafId) animateOrbs()
+  }
+}
+
+onMounted(() => {
+  animateOrbs()
+  document.addEventListener('visibilitychange', onVisibilityChange)
+})
+
+onUnmounted(() => {
+  if (rafId) cancelAnimationFrame(rafId)
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+})
 </script>
 
 <template>

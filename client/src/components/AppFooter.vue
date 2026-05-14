@@ -48,8 +48,9 @@ async function fetchFooterData() {
     const config = await request.get('/config/public')
     if (config.site_info?.launch_date) {
       hasLaunched.value = true
-      calcUptime(config.site_info.launch_date)
-      timer = setInterval(() => calcUptime(config.site_info.launch_date), 1000)
+      _launchDate = config.site_info.launch_date
+      calcUptime(_launchDate)
+      timer = setInterval(() => calcUptime(_launchDate), 1000)
     }
     if (config.social_links) {
       socialLinks.value = Object.entries(config.social_links).map(([key, url]) => ({ key, url }))
@@ -64,6 +65,23 @@ async function fetchFooterData() {
 
 onMounted(fetchFooterData)
 onUnmounted(() => { if (timer) clearInterval(timer) })
+
+// 页面隐藏时暂停计时器，恢复时直接重启
+let _launchDate = null
+
+function handleVisibility() {
+  if (document.hidden) {
+    if (timer) { clearInterval(timer); timer = null }
+  } else {
+    if (!timer && _launchDate) {
+      calcUptime(_launchDate)
+      timer = setInterval(() => calcUptime(_launchDate), 1000)
+    }
+  }
+}
+
+document.addEventListener('visibilitychange', handleVisibility)
+onUnmounted(() => document.removeEventListener('visibilitychange', handleVisibility))
 </script>
 
 <template>

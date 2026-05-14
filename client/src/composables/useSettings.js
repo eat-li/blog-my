@@ -16,17 +16,63 @@ export function useSettings() {
   const socialLinks = ref([])
   const newSocial = ref({ key: '', url: '' })
   const githubConfig = ref({ username: '', repo_count: 6 })
-  const live2d = ref({
-    model: 'shizuku', scale: 1.0, position: 'right',
-    welcome: [], click: [], idle: [], night: [], pageSwitch: []
-  })
   const music = ref({ songs: [], autoplay: true, volume: 0.5, shuffle: false })
+
+  // 关于页面默认内容
+  const aboutPage = ref({
+    welcome: {
+      heading: '欢迎来到我的小站',
+      paragraphs: [
+        '欢迎来到 EatLi 的博客，一个记录技术成长与二次元生活的小角落。',
+        '这里有前端开发的技术沉淀，也有动漫和 Galgame 的观后感，每一篇文章都是我用心写下的笔记。',
+        '如果有什么想说的，欢迎去留言板留下足迹。',
+      ]
+    },
+    siteTech: {
+      heading: '网站技术搭建',
+      intro: '本站采用前后端分离架构，前端基于 Vue 3 + Vite 构建，后端基于 Express 5 + Sequelize + MySQL，文件存储使用阿里云 OSS。',
+      specs: [
+        { label: '设计风格', value: '磨砂玻璃 Glassmorphism' },
+        { label: '动画特效', value: '落樱飘落、翻页加载、像素吉祥物' },
+        { label: '部署方式', value: '前后端分离，Vite 代理开发' },
+        { label: '认证方案', value: 'JWT Bearer Token + 路由守卫' },
+      ],
+      note: '整体 UI 采用磨砂玻璃（Glassmorphism）设计系统，温暖复古配色，配合落樱飘落、翻页加载等交互细节，营造一个舒适复古的个人空间。'
+    },
+    aboutMe: {
+      heading: '关于我自己',
+      paragraphs: [
+        '工作之余最大的爱好就是推 Galgame 和追番，尤其偏爱 Key 社的催泪作品和芳文社的日常番。',
+        '技术方面，目前专注于 Vue 生态和 Node.js 后端开发，对 UI 设计和交互体验有较高的追求。',
+      ]
+    },
+    reflections: {
+      heading: '个人感悟',
+      paragraphs: [
+        '写博客是一件需要坚持的事情。每写完一篇文章，都感觉自己又沉淀了一些东西。',
+        '一个好的故事能改变一个人看待世界的方式。Key 社的作品教会我「过程值得珍惜」；日常番则提醒我「平凡的日子也可以闪闪发光」。',
+        '写代码也是如此 — 好的代码不只是功能的堆砌，更是对细节的尊重。',
+      ]
+    },
+    techStack: {
+      heading: '个人技术栈',
+      intro: '以下是我目前主要使用的技术和工具，持续学习中。',
+      items: [
+        { name: 'Vue 3', desc: '前端框架，组合式 API + Vite 构建', color: '#41b883' },
+        { name: 'Express 5', desc: '后端框架，三层分层架构', color: '#888888' },
+        { name: 'MySQL', desc: '关系型数据库，Sequelize ORM', color: '#4479A1' },
+        { name: '阿里云 OSS', desc: '对象存储，图片音频上传', color: '#FF6A00' },
+        { name: 'Pinia', desc: '状态管理，Token 鉴权', color: '#f0b400' },
+        { name: 'Axios', desc: 'HTTP 请求，拦截器封装', color: '#5A29E4' },
+      ]
+    }
+  })
 
   const tabs = [
     { id: 'site', label: '站点信息', icon: '◎' },
     { id: 'social', label: '社交链接', icon: '⬡' },
     { id: 'github', label: 'GitHub', icon: '⬡' },
-    { id: 'live2d', label: '看板娘', icon: '◉' },
+    { id: 'about', label: '关于页面', icon: '◎' },
     { id: 'music', label: '背景音乐', icon: '♬' },
   ]
 
@@ -45,8 +91,8 @@ export function useSettings() {
         socialLinks.value = Object.entries(config.social_links).map(([key, url]) => ({ key, url }))
       }
       if (config.github_config) githubConfig.value = config.github_config
-      if (config.live2d) live2d.value = config.live2d
       if (config.music) music.value = config.music
+      if (config.about_page) aboutPage.value = { ...aboutPage.value, ...config.about_page }
     } catch (e) {
       if (e.response?.status === 401) router.push('/admin/login')
       else loadError.value = '加载配置失败'
@@ -94,17 +140,6 @@ export function useSettings() {
     } finally { saving.value = false }
   }
 
-  // Live2D
-  async function saveLive2d() {
-    saving.value = true
-    try {
-      await configApi.update('live2d', live2d.value)
-      showSuccess('看板娘配置已保存')
-    } catch (e) {
-      loadError.value = e.response?.data?.message || '保存失败'
-    } finally { saving.value = false }
-  }
-
   // 音乐
   function addSong() {
     music.value.songs.push({ title: '', artist: '', url: '', cover: '' })
@@ -120,12 +155,24 @@ export function useSettings() {
     } finally { saving.value = false }
   }
 
+  // 关于页面
+  async function saveAbout() {
+    saving.value = true
+    try {
+      await configApi.update('about_page', aboutPage.value)
+      showSuccess('关于页面已保存')
+    } catch (e) {
+      loadError.value = e.response?.data?.message || '保存失败'
+    } finally { saving.value = false }
+  }
+
   return {
     activeTab, saving, loadError, successMsg, tabs,
-    siteInfo, socialLinks, newSocial, githubConfig, live2d, music,
+    siteInfo, socialLinks, newSocial, githubConfig, aboutPage, music,
     loadAll,
     saveSite, addSocial, removeSocial, saveSocial,
-    saveGithub, saveLive2d,
+    saveGithub,
     addSong, removeSong, saveMusic,
+    saveAbout,
   }
 }
