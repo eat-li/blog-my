@@ -115,7 +115,7 @@ onUnmounted(() => document.removeEventListener('visibilitychange', handleVisibil
           书写每一行
         </p>
         <p class="footer-uptime" v-if="hasLaunched">
-          <span class="uptime-label">🕰 存活</span>
+          <span class="uptime-label">🕰 就连永恒，也是由这样的瞬间构成。见证微小：</span>
           <span class="uptime-value">
             {{ String(siteUptime.days).padStart(3, '0') }}<span class="uptime-unit">天</span>
             {{ String(siteUptime.hours).padStart(2, '0') }}<span class="uptime-unit">时</span>
