@@ -19,6 +19,7 @@ const navItems = [
   },
   { path: '/guestbook', label: '留言板', icon: '☰' },
   { path: '/diary', label: '日记', icon: '~' },
+  { path: '/gallery', label: '画廊', icon: '▥' },
   { path: '/links', label: '友链', icon: '⚭' },
   { path: '/about', label: '关于', icon: '◎' },
 ]

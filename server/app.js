@@ -51,6 +51,7 @@ app.use('/api/stats', require('./routes/stats'))
 app.use('/api/quotes', require('./routes/quotes'))
 app.use('/api/announcements', require('./routes/announcements'))
 app.use('/api/diaries', require('./routes/diaries'))
+app.use('/api/gallery', require('./routes/gallery'))
 
 // 生产环境：serve 前端静态文件 + SPA 路由回退（使用 Nginx 时可省略此段）
 if (isProduction) {

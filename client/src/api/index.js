@@ -83,6 +83,14 @@ export const diaryApi = {
   delete: (id) => request.delete(`/diaries/${id}`)
 }
 
+export const galleryApi = {
+  list: () => request.get('/gallery'),
+  adminList: (params) => request.get('/gallery/admin', { params }),
+  create: (data) => request.post('/gallery', data),
+  update: (id, data) => request.put(`/gallery/${id}`, data),
+  delete: (id) => request.delete(`/gallery/${id}`)
+}
+
 export const uploadApi = {
   file: (formData, onProgress) => request.post('/upload/file', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

@@ -9,6 +9,7 @@ const FriendLink = require('./friendlink.model')
 const Quote = require('./quote.model')
 const Announcement = require('./announcement.model')
 const Diary = require('./diary.model')
+const Gallery = require('./gallery.model')
 
 // 关联
 User.hasMany(Post, { foreignKey: 'user_id' })
@@ -23,9 +24,13 @@ Tag.belongsToMany(Post, { through: 'post_tags', foreignKey: 'tag_id' })
 // 留言自关联（回复）
 Message.hasMany(Message, { foreignKey: 'parent_id' })
 
+// 画廊
+User.hasMany(Gallery, { foreignKey: 'user_id' })
+Gallery.belongsTo(User, { foreignKey: 'user_id' })
+
 async function syncDatabase() {
   try {
-    await sequelize.sync({ alter: true })
+    await sequelize.sync()
     console.log('数据库表同步完成')
   } catch (error) {
     console.error('数据库同步失败:', error.message)
@@ -44,5 +49,6 @@ module.exports = {
   Quote,
   Announcement,
   Diary,
+  Gallery,
   syncDatabase
 }

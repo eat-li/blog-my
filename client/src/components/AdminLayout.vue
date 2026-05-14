@@ -19,6 +19,7 @@ const navGroups = [
       { path: '/admin/quotes', label: '名言管理', icon: '☰' },
       { path: '/admin/announcements', label: '公告管理', icon: '◇' },
       { path: '/admin/diaries', label: '日记管理', icon: '~' },
+      { path: '/admin/gallery', label: '画廊管理', icon: '▥' },
     ],
   },
   {

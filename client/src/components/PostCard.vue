@@ -61,7 +61,7 @@ function formatDate(d) {
       <p class="card-summary" v-if="post.summary">{{ post.summary }}</p>
 
       <div class="card-meta">
-        <span class="card-views">👁️ {{ (post.views || 0).toLocaleString() }} 次</span>
+        <span class="card-views">{{ (post.views || 0).toLocaleString() }} 次</span>
         <span class="card-date">{{ formatDate(post.createdAt) }}</span>
       </div>
     </div>

@@ -77,6 +77,11 @@ const routes = [
     name: 'DiaryDetail',
     component: () => import('../views/diary/DiaryDetail.vue')
   },
+  {
+    path: '/gallery',
+    name: 'Gallery',
+    component: () => import('../views/Gallery.vue')
+  },
 
   // ========== 后台路由 ==========
   {
@@ -142,6 +147,12 @@ const routes = [
         name: 'AdminDiaries',
         component: () => import('../views/admin/DiaryAdmin.vue'),
         meta: { requiresAuth: true, title: '日记管理' }
+      },
+      {
+        path: 'gallery',
+        name: 'AdminGallery',
+        component: () => import('../views/admin/GalleryAdmin.vue'),
+        meta: { requiresAuth: true, title: '画廊管理' }
       },
       {
         path: 'settings',
