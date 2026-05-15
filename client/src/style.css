@@ -96,6 +96,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   cursor: var(--cursor-sparkle);
+  /* 安全区域适配刘海屏/底部指示条 */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 /* 链接和可点击元素使用发光星芒 */
@@ -201,6 +203,7 @@ img {
   align-items: center;
   justify-content: center;
   padding: 10px 24px;
+  min-height: 44px;
   font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 500;
@@ -233,7 +236,7 @@ img {
   width: 100%;
   padding: 12px 16px;
   font-family: var(--font-sans);
-  font-size: 15px;
+  font-size: 16px;
   color: var(--color-text);
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
@@ -457,5 +460,32 @@ img {
   :root {
     --radius-lg: 16px;
     --radius-md: 10px;
+  }
+
+  /* 触摸友好：确保所有可交互元素有足够的点击区域 */
+  .glass-btn {
+    min-height: 44px;
+  }
+
+  /* iOS 平滑滚动 */
+  .admin-sidebar,
+  .sidebar-nav {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* 极小屏 (iPhone SE 等) */
+@media (max-width: 374px) {
+  h1 { font-size: 22px; }
+  h2 { font-size: 18px; }
+
+  .glass-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  .glass-input {
+    padding: 10px 12px;
+    font-size: 16px;
   }
 }

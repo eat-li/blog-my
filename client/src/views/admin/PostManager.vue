@@ -244,8 +244,9 @@ async function handleDelete(id) {
 }
 
 .action-btn {
-  padding: 4px 12px;
-  font-size: 12px;
+  padding: 6px 16px;
+  font-size: 13px;
+  min-height: 36px;
 }
 
 .action-btn--danger:hover {
@@ -293,7 +294,65 @@ async function handleDelete(id) {
     gap: 12px;
     align-items: flex-start;
   }
-  .th-views, .td-views { display: none; }
-  .th-date, .td-date { display: none; }
+
+  /* 移动端隐藏表头，改为卡片布局 */
+  .pm-table-head {
+    display: none;
+  }
+
+  .pm-table {
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: none;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .pm-table-row {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 14px 16px;
+    gap: 8px;
+    border-radius: var(--radius-md);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .th-type, .td-type,
+  .th-status, .td-status,
+  .th-views, .td-views,
+  .th-date, .td-date,
+  .th-actions, .td-actions,
+  .th-title, .td-title {
+    width: auto;
+    text-align: left;
+  }
+
+  .td-title {
+    font-size: 15px;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  .td-actions {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+  .action-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 16px;
+    font-size: 14px;
+    min-height: 44px;
+  }
 }
 </style>

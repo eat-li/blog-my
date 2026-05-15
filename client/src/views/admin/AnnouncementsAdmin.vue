@@ -348,8 +348,9 @@ function toggleActive(item) {
 }
 
 .action-btn {
-  font-size: 12px;
-  padding: 4px 14px;
+  font-size: 13px;
+  padding: 8px 18px;
+  min-height: 40px;
 }
 
 .action-edit:hover { color: var(--color-primary); border-color: rgba(139, 69, 19, 0.3); }

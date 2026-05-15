@@ -230,8 +230,8 @@ async function handleDelete(id) {
 .ga-card-body { padding: 10px 14px 6px; }
 .ga-card-title { font-size: 13px; font-weight: 600; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ga-card-album { font-size: 11px; color: var(--color-text-muted); margin-top: 2px; display: inline-block; }
-.ga-card-actions { display: flex; gap: 4px; padding: 0 14px 12px; }
-.action-btn { font-size: 11px; padding: 3px 12px; }
+.ga-card-actions { display: flex; gap: 6px; padding: 0 14px 12px; }
+.action-btn { font-size: 13px; padding: 8px 18px; min-height: 40px; }
 .action-edit:hover { color: var(--color-primary); border-color: rgba(139,69,19,0.3); }
 .action-delete:hover { color: var(--color-accent-anime); border-color: rgba(232,91,91,0.3); }
 
@@ -247,7 +247,13 @@ async function handleDelete(id) {
 
 @media (max-width: 1024px) { .ga-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 768px) {
-  .ga-grid { grid-template-columns: repeat(2, 1fr); }
+  .ga-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .ga-form-grid { grid-template-columns: 1fr; }
+  .ga-card-actions { flex-direction: column; }
+  .action-btn { width: 100%; justify-content: center; }
+  .ga-header { flex-direction: column; gap: 10px; align-items: flex-start; }
+}
+@media (max-width: 374px) {
+  .ga-grid { grid-template-columns: 1fr; }
 }
 </style>

@@ -450,6 +450,8 @@ function insertTable() {
   color: var(--color-text-secondary);
   cursor: pointer;
   transition: all var(--transition-fast);
+  min-width: 32px;
+  min-height: 30px;
 }
 
 .tb-btn:hover { background: rgba(139, 69, 19, 0.08); color: var(--color-text); }
@@ -717,6 +719,12 @@ function insertTable() {
   .pe-type-select {
     flex-direction: column;
   }
+
+  .type-btn {
+    padding: 12px 20px;
+    font-size: 15px;
+  }
+
   .note-row {
     flex-direction: column;
   }
@@ -733,6 +741,27 @@ function insertTable() {
   }
   .pe-actions-right .glass-btn {
     flex: 1;
+  }
+
+  /* 工具栏移动端优化 */
+  .pe-toolbar {
+    gap: 6px;
+    padding: 8px 10px;
+  }
+
+  .tb-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 15px;
+  }
+
+  .tb-sep {
+    margin: 0 2px;
+  }
+
+  /* 编辑器内容区减少内边距 */
+  .editor-content {
+    padding: 14px 16px;
   }
 }
 </style>

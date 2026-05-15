@@ -180,4 +180,29 @@ function goHome() {
   font-size: 13px;
   justify-content: center;
 }
+
+@media (max-width: 480px) {
+  .login-page {
+    padding: 12px;
+    align-items: flex-start;
+    padding-top: 60px;
+  }
+
+  .login-card {
+    padding: 28px 20px;
+  }
+
+  .login-title {
+    font-size: 24px;
+  }
+
+  .login-icon {
+    font-size: 28px;
+  }
+
+  .login-btn {
+    padding: 14px;
+    font-size: 16px;
+  }
+}
 </style>

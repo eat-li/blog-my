@@ -148,6 +148,8 @@ function goBack() {
   position: sticky;
   top: 0;
   z-index: 1000;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .sidebar-header {
@@ -179,10 +181,10 @@ function goBack() {
 
 .sidebar-close {
   display: none;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   padding: 0;
-  font-size: 14px;
+  font-size: 18px;
 }
 
 /* 导航 */
@@ -210,13 +212,14 @@ function goBack() {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 12px 12px;
   font-size: 14px;
   color: var(--color-text-secondary);
   text-decoration: none;
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
   margin-bottom: 2px;
+  min-height: 44px;
 }
 
 .nav-item:hover {
@@ -248,6 +251,7 @@ function goBack() {
 .sidebar-btn {
   width: 100%;
   padding: 8px 16px;
+  min-height: 44px;
   font-size: 13px;
   justify-content: flex-start;
 }
@@ -287,11 +291,11 @@ function goBack() {
 
 .topbar-menu-btn {
   display: none;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   margin-right: 12px;
-  font-size: 18px;
+  font-size: 20px;
 }
 
 .menu-icon {
@@ -329,6 +333,8 @@ function goBack() {
     bottom: 0;
     z-index: 1000;
     transition: left 0.3s ease;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   .admin-sidebar--open {

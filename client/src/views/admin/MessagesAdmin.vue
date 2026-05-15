@@ -207,8 +207,9 @@ const statusColor = { pending: 'var(--color-accent-article)', approved: 'var(--c
 }
 
 .action-btn {
-  font-size: 12px;
-  padding: 4px 14px;
+  font-size: 13px;
+  padding: 8px 18px;
+  min-height: 40px;
 }
 
 .action-approve:hover { color: var(--color-accent-galgame); border-color: rgba(123,168,114,0.3); }
@@ -236,5 +237,24 @@ const statusColor = { pending: 'var(--color-accent-article)', approved: 'var(--c
 
 @media (max-width: 768px) {
   .ma-ip, .ma-email { display: none; }
+
+  .ma-card {
+    padding: 14px 16px;
+  }
+
+  .ma-card-bottom {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .ma-actions {
+    width: 100%;
+  }
+
+  .action-btn {
+    flex: 1;
+    justify-content: center;
+  }
 }
 </style>

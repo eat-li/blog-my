@@ -500,11 +500,11 @@ async function handleCoverUpload(event, index) {
 }
 
 .social-remove {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   flex-shrink: 0;
-  font-size: 13px;
+  font-size: 16px;
   color: var(--color-accent-anime);
 }
 
@@ -536,11 +536,11 @@ async function handleCoverUpload(event, index) {
 }
 
 .upload-btn {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   flex-shrink: 0;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .upload-btn.disabled,
@@ -611,17 +611,19 @@ async function handleCoverUpload(event, index) {
 }
 
 .tech-tag-remove {
-  width: 18px;
-  height: 18px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: none;
   background: none;
   color: var(--color-accent-anime);
-  font-size: 12px;
+  font-size: 14px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 28px;
+  min-height: 28px;
 }
 
 .tech-tag-input {

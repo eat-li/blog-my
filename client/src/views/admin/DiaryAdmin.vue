@@ -385,13 +385,13 @@ function formatDate(d) {
   position: absolute;
   top: 2px;
   right: 2px;
-  width: 22px;
-  height: 22px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: none;
   background: rgba(0, 0, 0, 0.55);
   color: #fff;
-  font-size: 12px;
+  font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -596,8 +596,9 @@ function formatDate(d) {
 }
 
 .action-btn {
-  font-size: 12px;
-  padding: 4px 14px;
+  font-size: 13px;
+  padding: 8px 18px;
+  min-height: 40px;
 }
 
 .action-edit:hover { color: var(--color-primary); border-color: rgba(139, 69, 19, 0.3); }
