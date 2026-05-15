@@ -8,7 +8,7 @@ const {
   siteInfo, socialLinks, newSocial, githubConfig, aboutPage, music,
   loadAll,
   saveSite, addSocial, removeSocial, saveSocial,
-  saveGithub,
+  saveGithub, addGithubRepo, removeGithubRepo,
   addSong, removeSong, saveMusic,
   saveAbout,
 } = useSettings()
@@ -160,13 +160,25 @@ async function handleCoverUpload(event, index) {
     <!-- ===== GitHub ===== -->
     <div v-if="activeTab === 'github'" class="tab-content">
       <div class="set-field">
-        <label>GitHub 用户名</label>
-        <input v-model="githubConfig.username" class="glass-input" placeholder="your-username" />
+        <label>仓库列表</label>
+        <div v-for="(repo, i) in githubConfig.repos" :key="i" class="repo-edit-item glass-card">
+          <div class="song-item-row">
+            <input v-model="repo.name" class="glass-input" placeholder="仓库名" style="flex:2" />
+            <input v-model="repo.html_url" class="glass-input" placeholder="仓库链接" style="flex:3" />
+            <button class="glass-btn social-remove" @click="removeGithubRepo(i)" title="删除">✕</button>
+          </div>
+          <div class="song-item-row">
+            <input v-model="repo.description" class="glass-input" placeholder="描述" style="flex:3" />
+            <input v-model.number="repo.stargazers_count" class="glass-input" type="number" min="0" placeholder="Stars" style="flex:1" />
+          </div>
+          <div class="song-item-row">
+            <input v-model="repo.language" class="glass-input" placeholder="语言 (JavaScript/Vue/Python…)" style="flex:2" />
+            <input v-model="repo.updated_at" class="glass-input" type="date" style="flex:2" />
+          </div>
+        </div>
+        <button class="glass-btn add-text-btn" @click="addGithubRepo">+ 添加仓库</button>
       </div>
-      <div class="set-field">
-        <label>展示仓库数量</label>
-        <input v-model.number="githubConfig.repo_count" class="glass-input" type="number" min="1" max="20" />
-      </div>
+      <p v-if="!githubConfig.repos.length" class="set-empty">还没有添加任何仓库</p>
       <button class="glass-btn set-save-btn" @click="saveGithub" :disabled="saving">
         {{ saving ? '保存中…' : '保存设置' }}
       </button>
@@ -513,6 +525,15 @@ async function handleCoverUpload(event, index) {
   color: var(--color-text-muted);
   text-align: center;
   padding: 24px;
+}
+
+/* 仓库编辑 */
+.repo-edit-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
 }
 
 /* 歌曲 */

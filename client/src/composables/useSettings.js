@@ -15,7 +15,7 @@ export function useSettings() {
   })
   const socialLinks = ref([])
   const newSocial = ref({ key: '', url: '' })
-  const githubConfig = ref({ username: '', repo_count: 6 })
+  const githubConfig = ref({ repos: [] })
   const music = ref({ songs: [], autoplay: true, volume: 0.5, shuffle: false })
 
   // 关于页面默认内容
@@ -90,7 +90,14 @@ export function useSettings() {
       if (config.social_links) {
         socialLinks.value = Object.entries(config.social_links).map(([key, url]) => ({ key, url }))
       }
-      if (config.github_config) githubConfig.value = config.github_config
+      if (config.github_config) {
+        // 兼容旧格式 { username, repo_count } 和新格式 { repos: [...] }
+        if (config.github_config.repos) {
+          githubConfig.value = config.github_config
+        } else {
+          githubConfig.value = { repos: [] }
+        }
+      }
       if (config.music) music.value = config.music
       if (config.about_page) aboutPage.value = { ...aboutPage.value, ...config.about_page }
     } catch (e) {
@@ -130,6 +137,12 @@ export function useSettings() {
   }
 
   // GitHub
+  function addGithubRepo() {
+    githubConfig.value.repos.push({ name: '', description: '', html_url: '', stargazers_count: 0, language: '', updated_at: '' })
+  }
+  function removeGithubRepo(index) {
+    githubConfig.value.repos.splice(index, 1)
+  }
   async function saveGithub() {
     saving.value = true
     try {
@@ -171,7 +184,7 @@ export function useSettings() {
     siteInfo, socialLinks, newSocial, githubConfig, aboutPage, music,
     loadAll,
     saveSite, addSocial, removeSocial, saveSocial,
-    saveGithub,
+    saveGithub, addGithubRepo, removeGithubRepo,
     addSong, removeSong, saveMusic,
     saveAbout,
   }

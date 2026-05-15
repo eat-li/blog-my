@@ -17,7 +17,7 @@ app.use(helmet({
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "blob:", "https://blog-saki.oss-cn-chengdu.aliyuncs.com"],
       mediaSrc: ["'self'", "https://blog-saki.oss-cn-chengdu.aliyuncs.com"],
-      connectSrc: ["'self'", "https://api.github.com"],
+      connectSrc: ["'self'"],
       frameSrc: ["'self'"]
     }
   },

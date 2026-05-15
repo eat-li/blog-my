@@ -44,8 +44,7 @@ async function seed() {
     {
       key: 'github_config',
       value: {
-        username: '',
-        repo_count: 6
+        repos: []
       }
     },
     {

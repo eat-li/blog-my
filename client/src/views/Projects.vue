@@ -3,7 +3,6 @@ import { ref, onMounted } from 'vue'
 import { configApi } from '../api'
 
 const repos = ref([])
-const user = ref(null)
 const loading = ref(true)
 const error = ref(null)
 
@@ -26,45 +25,15 @@ function formatDate(d) {
 
 onMounted(async () => {
   try {
-    // 获取 GitHub 用户名
     const config = await configApi.getPublic()
-    const ghUsername = config?.github_config?.username
-    if (!ghUsername) {
-      error.value = '未配置 GitHub 用户名'
+    const repoList = config?.github_config?.repos
+    if (!repoList?.length) {
+      error.value = '暂未配置开源项目'
       return
     }
-
-    user.value = { login: ghUsername }
-
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), 8000)
-    const resp = await fetch(
-      `https://api.github.com/users/${ghUsername}/repos?sort=stars&per_page=20`,
-      {
-        headers: { Accept: 'application/vnd.github.v3+json' },
-        signal: controller.signal
-      }
-    )
-    clearTimeout(timer)
-
-    if (!resp.ok) {
-      throw new Error(`GitHub API ${resp.status}`)
-    }
-
-    const data = await resp.json()
-    repos.value = (Array.isArray(data) ? data : [])
-      .filter(r => !r.fork)
-      .map(r => ({
-        id: r.id,
-        name: r.name,
-        description: r.description,
-        html_url: r.html_url,
-        stargazers_count: r.stargazers_count,
-        language: r.language,
-        updated_at: r.updated_at
-      }))
+    repos.value = repoList
   } catch (e) {
-    error.value = '无法获取 GitHub 项目数据，请检查网络连接'
+    error.value = '加载项目数据失败'
   } finally {
     loading.value = false
   }
@@ -75,7 +44,6 @@ onMounted(async () => {
   <div class="page">
     <div class="page-header">
       <h1 class="page-title">✦ 开源项目</h1>
-      <p class="page-desc" v-if="user">GitHub · {{ user.login || user.username }}</p>
     </div>
 
     <!-- 骨架屏 -->
@@ -92,8 +60,8 @@ onMounted(async () => {
     <!-- 项目列表 -->
     <div v-else-if="repos.length" class="repo-grid">
       <a
-        v-for="repo in repos"
-        :key="repo.id"
+        v-for="(repo, index) in repos"
+        :key="index"
         :href="repo.html_url || repo.url"
         target="_blank"
         rel="noopener"

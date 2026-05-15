@@ -150,36 +150,10 @@ onMounted(async () => {
     document.addEventListener('visibilitychange', handleVisibility)
   }
 
-  // 直接从 GitHub API 获取仓库（浏览器走系统代理）
-  const ghUsername = config?.github_config?.username
-  if (ghUsername) {
-    try {
-      const controller = new AbortController()
-      const timer = setTimeout(() => controller.abort(), 6000)
-      const resp = await fetch(
-        `https://api.github.com/users/${ghUsername}/repos?sort=stars&per_page=6`,
-        {
-          headers: { Accept: 'application/vnd.github.v3+json' },
-          signal: controller.signal
-        }
-      )
-      clearTimeout(timer)
-      if (resp.ok) {
-        const data = await resp.json()
-        repos.value = (Array.isArray(data) ? data : [])
-          .filter(r => !r.fork)
-          .slice(0, 5)
-          .map(r => ({
-            id: r.id,
-            name: r.name,
-            description: r.description,
-            html_url: r.html_url,
-            stargazers_count: r.stargazers_count,
-            language: r.language,
-            updated_at: r.updated_at
-          }))
-      }
-    } catch { /* GitHub 不可达，repos 保持空数组 */ }
+  // 从配置获取 GitHub 仓库
+  const repoList = config?.github_config?.repos
+  if (repoList?.length) {
+    repos.value = repoList.slice(0, 6)
   }
 
   loading.value = false
@@ -367,8 +341,8 @@ onUnmounted(() => {
         <div class="sidebar-card glass-card" v-if="repos.length">
           <h3 class="sidebar-title">⬡ GitHub 项目</h3>
           <a
-            v-for="repo in repos"
-            :key="repo.id"
+            v-for="(repo, index) in repos"
+            :key="index"
             :href="repo.html_url || repo.url"
             target="_blank"
             rel="noopener"
