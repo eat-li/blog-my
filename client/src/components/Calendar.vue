@@ -69,17 +69,17 @@ holidayDefs.forEach(h => holidayMap.set(h.mmdd, h))
 // 可变节日
 function findMotherDay(y) {
   const first = new Date(y, 4, 1)
-  const d = 7 - first.getDay() + 7
+  const d = (7 - first.getDay()) % 7 + 8
   return { mmdd: `05-${String(d).padStart(2, '0')}`, name: '母亲节', type: 'love' }
 }
 function findFatherDay(y) {
   const first = new Date(y, 5, 1)
-  const d = 7 - first.getDay() + 14
+  const d = (7 - first.getDay()) % 7 + 15
   return { mmdd: `06-${String(d).padStart(2, '0')}`, name: '父亲节', type: 'love' }
 }
 function findThanksgiving(y) {
   const first = new Date(y, 10, 1)
-  const d = (4 - first.getDay() + 7) % 7 + 22
+  const d = (11 - first.getDay()) % 7 + 22
   return { mmdd: `11-${String(d).padStart(2, '0')}`, name: '感恩节', type: 'western' }
 }
 

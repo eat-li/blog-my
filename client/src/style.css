@@ -98,6 +98,8 @@ body {
   cursor: var(--cursor-sparkle);
   /* 安全区域适配刘海屏/底部指示条 */
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  /* 主题切换过渡 */
+  transition: background-color 0.4s ease, color 0.4s ease;
 }
 
 /* 链接和可点击元素使用发光星芒 */
@@ -119,6 +121,7 @@ body::before {
     radial-gradient(ellipse 70% 60% at 50% 80%, rgba(232, 91, 91, 0.06) 0%, transparent 50%),
     linear-gradient(165deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%);
   animation: bgShift 20s ease-in-out infinite alternate;
+  transition: background 0.6s ease;
 }
 
 body::after {
@@ -334,6 +337,12 @@ img {
   padding: 0;
 }
 
+/* highlight.js 覆盖：复用 .prose pre 的背景，去掉 hljs 默认背景 */
+.prose pre .hljs {
+  background: transparent;
+  padding: 0;
+}
+
 /* 标签云中的标签 */
 .tag-badge {
   display: inline-block;
@@ -488,4 +497,88 @@ img {
     padding: 10px 12px;
     font-size: 16px;
   }
+}
+
+/* ============================================
+   夜间模式 Dark Mode
+   暖色调深色 · 磨砂玻璃 · 沉静书卷气
+   ============================================ */
+[data-theme="dark"] {
+  --color-primary: #C68B5E;
+  --color-primary-light: #D4A27A;
+  --color-primary-glow: rgba(198, 139, 94, 0.3);
+  --color-bg-start: #1A1612;
+  --color-bg-end: #1E1915;
+  --color-bg-glass: rgba(30, 25, 21, 0.65);
+  --color-bg-glass-strong: rgba(30, 25, 21, 0.82);
+  --color-text: #E8E0D6;
+  --color-text-secondary: #B8AFA5;
+  --color-text-muted: #7D756C;
+  --color-border: rgba(198, 139, 94, 0.15);
+  --color-border-glass: rgba(255, 255, 255, 0.08);
+  --color-white: #2A2420;
+
+  --color-accent-article: #E8A07A;
+  --color-accent-anime: #E87A7A;
+  --color-accent-galgame: #8FBF86;
+  --color-accent-article-glow: rgba(232, 160, 122, 0.2);
+  --color-accent-anime-glow: rgba(232, 122, 122, 0.2);
+  --color-accent-galgame-glow: rgba(143, 191, 134, 0.2);
+
+  --glass-bg: rgba(30, 25, 21, 0.50);
+  --glass-bg-hover: rgba(40, 34, 28, 0.70);
+  --glass-border: rgba(255, 255, 255, 0.07);
+  --glass-border-hover: rgba(255, 255, 255, 0.12);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  --glass-shadow-hover: 0 16px 48px rgba(0, 0, 0, 0.35);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.3);
+  --shadow-glow: 0 0 24px rgba(198, 139, 94, 0.12);
+}
+
+/* 夜间模式：背景渐变 */
+[data-theme="dark"] body::before {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(232, 160, 122, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(143, 191, 134, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse 70% 60% at 50% 80%, rgba(232, 122, 122, 0.03) 0%, transparent 50%),
+    linear-gradient(165deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%);
+}
+
+/* 夜间模式：噪点纹理降淡 */
+[data-theme="dark"] body::after {
+  opacity: 0.15;
+}
+
+/* 夜间模式：骨架屏 */
+[data-theme="dark"] .skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 75%
+  );
+  background-size: 200% 100%;
+}
+
+/* 夜间模式：滚动条 */
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(198, 139, 94, 0.25);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(198, 139, 94, 0.4);
+}
+
+/* 夜间模式：行内 code */
+[data-theme="dark"] .prose code {
+  background: rgba(198, 139, 94, 0.1);
+}
+
+/* 夜间模式：代码块 */
+[data-theme="dark"] .prose pre {
+  background: rgba(20, 17, 14, 0.92);
+  border-color: rgba(255, 255, 255, 0.05);
 }

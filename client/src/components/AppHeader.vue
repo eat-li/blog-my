@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import ThemeToggle from './ThemeToggle.vue'
 
 const router = useRouter()
 const mobileMenuOpen = ref(false)
@@ -99,6 +100,8 @@ watch(() => router.currentRoute.value.path, () => {
           </router-link>
         </template>
       </nav>
+
+      <ThemeToggle />
 
       <button
         class="menu-toggle glass-btn"

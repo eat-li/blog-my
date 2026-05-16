@@ -2,6 +2,10 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { postApi } from '../../api'
+import { useHighlight } from '../../composables/useHighlight'
+
+const contentRef = ref(null)
+useHighlight(contentRef, computed(() => post.value?.content))
 
 const route = useRoute()
 const post = ref(null)
@@ -101,7 +105,7 @@ onMounted(async () => {
           <img :src="post.cover_image" :alt="post.title" />
         </div>
 
-        <div class="detail-content prose" v-html="post.content" />
+        <div ref="contentRef" class="detail-content prose" v-html="post.content" />
 
         <div class="detail-tags" v-if="post.Tags?.length">
           <router-link v-for="tag in post.Tags" :key="tag.id" :to="`/tags/${tag.id}`" class="tag-badge">#{{ tag.name }}</router-link>

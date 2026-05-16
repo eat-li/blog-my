@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { postApi, configApi } from '../../api'
 import ArticleTOC from '../../components/ArticleTOC.vue'
+import { useHighlight } from '../../composables/useHighlight'
 
 const route = useRoute()
 const post = ref(null)
@@ -18,6 +19,9 @@ const renderContent = computed(() => {
   if (tocRef.value?.enrichedHTML) return tocRef.value.enrichedHTML
   return post.value?.content || ''
 })
+
+const contentRef = ref(null)
+useHighlight(contentRef, renderContent)
 
 function formatDate(d) {
   if (!d) return ''
@@ -84,7 +88,7 @@ onMounted(async () => {
             <img :src="post.cover_image" :alt="post.title" />
           </div>
 
-          <div class="detail-content prose" v-html="renderContent" />
+          <div ref="contentRef" class="detail-content prose" v-html="renderContent" />
 
           <div class="detail-tags" v-if="post.Tags?.length">
             <router-link

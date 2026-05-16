@@ -27,12 +27,31 @@ function animateOrbs() {
   rafId = requestAnimationFrame(animateOrbs)
 }
 
-// 页面隐藏时暂停动画，节省资源
+// 离开页面时标题轮播
+const originalTitle = document.title
+const awayTitles = [
+  '(´•ω•̥`) 等你回来哦',
+  '(⁄ ⁄•⁄ω⁄•⁄ ⁄) 想你了~',
+]
+let titleTimer = null
+let titleIndex = 0
+
+// 页面隐藏时暂停动画，节省资源 + 标题轮播
 function onVisibilityChange() {
   if (document.hidden) {
     if (rafId) { cancelAnimationFrame(rafId); rafId = null }
+    // 开始轮播离开标题
+    titleIndex = 0
+    document.title = awayTitles[0]
+    titleTimer = setInterval(() => {
+      titleIndex = (titleIndex + 1) % awayTitles.length
+      document.title = awayTitles[titleIndex]
+    }, 2000)
   } else {
     if (!rafId) animateOrbs()
+    // 恢复原标题
+    if (titleTimer) { clearInterval(titleTimer); titleTimer = null }
+    document.title = originalTitle
   }
 }
 
@@ -43,6 +62,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (rafId) cancelAnimationFrame(rafId)
+  if (titleTimer) clearInterval(titleTimer)
   document.removeEventListener('visibilitychange', onVisibilityChange)
 })
 </script>
