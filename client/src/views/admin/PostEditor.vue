@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useBlogStore } from '../../stores/blog'
 import { postApi, uploadApi } from '../../api'
@@ -279,6 +279,122 @@ function insertTable() {
     .run()
   showTablePicker.value = false
 }
+
+// AI 辅助
+const aiPanelOpen = ref(false)
+const aiLoading = ref(false)
+const aiAbortController = ref(null)
+const savedSelection = ref(null) // mousedown 时捕获的选区
+
+const aiInstructions = [
+  { value: 'polish', label: '润色', icon: '✦' },
+  { value: 'expand', label: '扩写', icon: '⊕' },
+  { value: 'shorten', label: '缩写', icon: '⊖' },
+  { value: 'translate', label: '翻译', icon: '⇄' },
+]
+
+// mousedown 时捕获选区（点击按钮会导致选区丢失）
+function captureSelection() {
+  if (!editor.value) return
+  const { from, to } = editor.value.state.selection
+  const text = editor.value.state.doc.textBetween(from, to, ' ').trim()
+  savedSelection.value = text ? { from, to, text } : null
+}
+
+function openAiPanel() {
+  if (!savedSelection.value) {
+    showAlert('请先选中要处理的文字')
+    return
+  }
+  aiPanelOpen.value = !aiPanelOpen.value
+}
+
+async function runAiAssist(instruction) {
+  if (!editor.value || aiLoading.value || !savedSelection.value) return
+
+  const { from, to, text: selectedText } = savedSelection.value
+
+  aiLoading.value = true
+  aiPanelOpen.value = false
+
+  // 先用 placeholder 替换选中文本
+  editor.value.chain().focus().insertContentAt({ from, to }, ' ').run()
+
+  const abortController = new AbortController()
+  aiAbortController.value = abortController
+
+  try {
+    const response = await fetch('/api/ai/assist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ text: selectedText, instruction }),
+      signal: abortController.signal,
+    })
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      throw new Error(err.message || `请求失败 (${response.status})`)
+    }
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+    let accumulated = ''
+
+    // 删除 placeholder，从原位置开始插入
+    editor.value.chain().focus().insertContentAt({ from, to: from + 1 }, '').run()
+    let insertPos = from
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed || !trimmed.startsWith('data: ')) continue
+        const data = trimmed.slice(6)
+        if (data === '[DONE]') break
+
+        try {
+          const parsed = JSON.parse(data)
+          if (parsed.content) {
+            accumulated += parsed.content
+            // 流式插入：每次追加新内容
+            editor.value.chain().focus().insertContentAt(insertPos, parsed.content).run()
+            insertPos += parsed.content.length
+          }
+        } catch {
+          // 跳过解析失败的行
+        }
+      }
+    }
+  } catch (e) {
+    if (e.name !== 'AbortError') {
+      showAlert(e.message || 'AI 请求失败')
+    }
+    // 恢复原文
+    editor.value.chain().focus().insertContentAt({ from, to: from }, selectedText).run()
+  } finally {
+    aiLoading.value = false
+    aiAbortController.value = null
+  }
+}
+
+function cancelAi() {
+  aiAbortController.value?.abort()
+}
+
+// 点击外部关闭 AI 面板
+function handleEditorClick(e) {
+  if (aiPanelOpen.value && !e.target.closest('.ai-panel') && !e.target.closest('.tb-btn-ai')) {
+    aiPanelOpen.value = false
+  }
+}
 </script>
 
 <template>
@@ -351,6 +467,12 @@ function insertTable() {
       <button class="tb-btn" @click="openTablePicker" title="插入表格">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
       </button>
+      <span class="tb-sep" />
+      <!-- AI 辅助按钮 -->
+      <button class="tb-btn tb-btn-ai" @mousedown="captureSelection" @click="openAiPanel" :class="{ 'tb-btn--active': aiPanelOpen }" title="AI 辅助" :disabled="aiLoading">
+        <span v-if="aiLoading" class="ai-spinner">✦</span>
+        <span v-else>AI</span>
+      </button>
       <!-- 表格尺寸选择器 -->
       <div v-if="showTablePicker" class="tb-table-picker glass-card">
         <div class="tp-row">
@@ -362,6 +484,27 @@ function insertTable() {
       </div>
       <!-- 隐藏的文件选择器 -->
       <input ref="fileInput" type="file" accept="image/*" style="display:none" @change="onFileSelected" />
+      <!-- AI 浮动面板 -->
+      <div v-if="aiPanelOpen" class="ai-panel glass-card">
+        <div class="ai-panel-title">AI 写作辅助</div>
+        <div class="ai-panel-btns">
+          <button
+            v-for="inst in aiInstructions"
+            :key="inst.value"
+            class="ai-inst-btn"
+            @click="runAiAssist(inst.value)"
+          >
+            <span class="ai-inst-icon">{{ inst.icon }}</span>
+            <span>{{ inst.label }}</span>
+          </button>
+        </div>
+      </div>
+      <!-- AI 生成中提示 -->
+      <div v-if="aiLoading" class="ai-loading-bar">
+        <span class="ai-loading-spinner">✦</span>
+        <span>AI 正在生成…</span>
+        <button class="ai-cancel-btn" @click="cancelAi">取消</button>
+      </div>
     </div>
 
     <!-- 上传中提示 -->
@@ -559,6 +702,7 @@ function insertTable() {
 /* 工具栏 */
 .pe-toolbar {
   position: relative;
+  z-index: 10;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -593,6 +737,111 @@ function insertTable() {
   height: 20px;
   background: var(--glass-border);
   margin: 0 4px;
+}
+
+/* AI 按钮 */
+.tb-btn-ai {
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--color-accent-galgame);
+  letter-spacing: 0.5px;
+}
+
+.tb-btn-ai:hover {
+  background: rgba(123, 168, 114, 0.12);
+  color: var(--color-accent-galgame);
+}
+
+.tb-btn-ai.tb-btn--active {
+  background: rgba(123, 168, 114, 0.15);
+  color: var(--color-accent-galgame);
+}
+
+.ai-spinner {
+  display: inline-block;
+  animation: uploadSpin 0.8s linear infinite;
+  font-size: 14px;
+}
+
+/* AI 浮动面板 */
+.ai-panel {
+  position: absolute;
+  top: 100%;
+  right: 8px;
+  margin-top: 6px;
+  padding: 12px 16px;
+  z-index: 50;
+  min-width: 200px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.ai-panel-title {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+
+.ai-panel-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.ai-inst-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.ai-inst-btn:hover {
+  border-color: var(--color-accent-galgame);
+  color: var(--color-accent-galgame);
+  background: rgba(123, 168, 114, 0.06);
+}
+
+.ai-inst-icon {
+  font-size: 16px;
+}
+
+/* AI 加载条 */
+.ai-loading-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--color-accent-galgame);
+}
+
+.ai-loading-spinner {
+  display: inline-block;
+  animation: uploadSpin 0.8s linear infinite;
+  font-size: 16px;
+}
+
+.ai-cancel-btn {
+  margin-left: auto;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  padding: 2px 10px;
+  cursor: pointer;
+}
+
+.ai-cancel-btn:hover {
+  border-color: var(--color-accent-anime);
+  color: var(--color-accent-anime);
 }
 
 /* 编辑器 */

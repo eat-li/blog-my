@@ -312,6 +312,7 @@ img {
 }
 
 .prose pre {
+  position: relative;
   background: rgba(44, 44, 44, 0.92);
   backdrop-filter: blur(8px);
   color: #e8e4df;
@@ -342,6 +343,39 @@ img {
 .prose pre .hljs {
   background: transparent;
   padding: 0;
+}
+
+/* 代码块复制按钮 */
+.prose pre .copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s, background 0.2s;
+  z-index: 1;
+}
+
+.prose pre:hover .copy-btn {
+  opacity: 1;
+}
+
+.prose pre .copy-btn:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.prose pre .copy-btn.copied {
+  color: #7BA872;
+  border-color: rgba(123, 168, 114, 0.4);
+  opacity: 1;
 }
 
 /* 标签云中的标签 */

@@ -54,7 +54,31 @@ hljs.registerLanguage('md', markdown)
 hljs.registerLanguage('dockerfile', dockerfile)
 
 /**
- * 对容器内的 pre code 代码块做语法高亮
+ * 为代码块添加一键复制按钮
+ */
+function addCopyButton(pre) {
+  if (pre.querySelector('.copy-btn')) return
+  const btn = document.createElement('button')
+  btn.className = 'copy-btn'
+  btn.textContent = '复制'
+  btn.addEventListener('click', () => {
+    const code = pre.querySelector('code')
+    if (!code) return
+    navigator.clipboard.writeText(code.innerText).then(() => {
+      btn.textContent = '已复制'
+      btn.classList.add('copied')
+      setTimeout(() => {
+        btn.textContent = '复制'
+        btn.classList.remove('copied')
+      }, 2000)
+    })
+  })
+  pre.style.position = 'relative'
+  pre.appendChild(btn)
+}
+
+/**
+ * 对容器内的 pre code 代码块做语法高亮 + 添加复制按钮
  * @param {import('vue').Ref<HTMLElement|null>} containerRef - 内容容器的模板 ref
  * @param {import('vue').Ref<string|undefined>} [contentRef] - 可选，内容 HTML 的 ref，用于 watch 触发
  */
@@ -68,6 +92,7 @@ export function useHighlight(containerRef, contentRef) {
           hljs.highlightElement(block)
           block.dataset.highlighted = 'true'
         }
+        addCopyButton(block.parentElement)
       })
     })
   }
