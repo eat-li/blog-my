@@ -15,6 +15,7 @@ const validate = (req, res, next) => {
 router.get('/', postController.list)
 router.get('/latest', postController.latest)
 router.get('/heatmap', postController.heatmap)
+router.get('/archive', postController.archive)
 router.get('/:id', postController.detail)
 router.post('/:id/view', postController.view)
 router.post('/', authMiddleware, [

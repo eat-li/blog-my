@@ -75,7 +75,7 @@ function formatDate(d) {
   text-decoration: none;
   color: inherit;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   cursor: var(--cursor-sparkle-glow);
   transform: perspective(800px) rotateX(0deg) translateY(0);
   transition:
@@ -109,8 +109,9 @@ function formatDate(d) {
 }
 
 .card-cover {
-  width: 100%;
-  height: 130px;
+  width: 220px;
+  height: auto;
+  min-height: 160px;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -216,8 +217,14 @@ function formatDate(d) {
 }
 
 @media (max-width: 768px) {
+  .post-card {
+    flex-direction: column;
+  }
+
   .card-cover {
-    height: 110px;
+    width: 100%;
+    height: 130px;
+    min-height: auto;
   }
 
   .card-body {

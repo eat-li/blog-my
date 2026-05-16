@@ -8,7 +8,8 @@ export const postApi = {
   delete: (id) => request.delete(`/posts/${id}`),
   view: (id) => request.post(`/posts/${id}/view`),
   latest: () => request.get('/posts/latest'),
-  heatmap: () => request.get('/posts/heatmap')
+  heatmap: () => request.get('/posts/heatmap'),
+  archive: () => request.get('/posts/archive')
 }
 
 export const authApi = {

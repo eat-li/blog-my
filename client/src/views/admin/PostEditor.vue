@@ -210,6 +210,32 @@ async function handleSave(publish = false) {
 }
 
 const fileInput = ref(null)
+const coverInput = ref(null)
+const uploadingCover = ref(false)
+
+async function onCoverSelected(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  uploadingCover.value = true
+  try {
+    const buffer = await file.arrayBuffer()
+    const bytes = new Uint8Array(buffer)
+    let binary = ''
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+    const base64 = btoa(binary)
+    const res = await uploadApi.image({ base64, filename: file.name })
+    form.value.cover_image = res.url
+  } catch {
+    showAlert('封面上传失败，请重试')
+  } finally {
+    uploadingCover.value = false
+    e.target.value = ''
+  }
+}
+
+function removeCover() {
+  form.value.cover_image = ''
+}
 
 // Toolbar actions
 async function addImage() {
@@ -285,6 +311,25 @@ function insertTable() {
       placeholder="摘要（可选）"
       rows="2"
     ></textarea>
+
+    <!-- 封面上传 -->
+    <div class="pe-cover glass-card">
+      <label class="cover-label">封面图片</label>
+      <div class="cover-body">
+        <div v-if="form.cover_image" class="cover-preview">
+          <img :src="form.cover_image" alt="封面预览" />
+          <button class="cover-remove" @click="removeCover" title="移除封面">×</button>
+        </div>
+        <button v-else class="cover-upload-btn" @click="coverInput?.click()" :disabled="uploadingCover">
+          <span v-if="uploadingCover">上传中…</span>
+          <template v-else>
+            <span class="cover-upload-icon">＋</span>
+            <span>点击上传封面</span>
+          </template>
+        </button>
+      </div>
+      <input ref="coverInput" type="file" accept="image/*" style="display:none" @change="onCoverSelected" />
+    </div>
 
     <!-- Tiptap 工具栏 -->
     <div class="pe-toolbar glass-card" v-if="editor">
@@ -423,6 +468,92 @@ function insertTable() {
   margin-bottom: 16px;
   resize: vertical;
   font-family: var(--font-sans);
+}
+
+/* 封面上传 */
+.pe-cover {
+  padding: 14px 18px;
+  margin-bottom: 16px;
+}
+
+.cover-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  margin-bottom: 10px;
+}
+
+.cover-body {
+  display: flex;
+  align-items: center;
+}
+
+.cover-preview {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  max-width: 320px;
+}
+
+.cover-preview img {
+  display: block;
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+}
+
+.cover-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.cover-preview:hover .cover-remove {
+  opacity: 1;
+}
+
+.cover-upload-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 2px dashed var(--glass-border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.cover-upload-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(139, 69, 19, 0.04);
+}
+
+.cover-upload-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.cover-upload-icon {
+  font-size: 18px;
 }
 
 /* 工具栏 */

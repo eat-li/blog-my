@@ -20,6 +20,13 @@ const link = computed(() => {
 
 const accentColor = computed(() => typeColor[props.post.type] || typeColor.article)
 
+// 封面图：优先 cover_image，其次从内容提取第一张图片
+const coverSrc = computed(() => {
+  if (props.post.cover_image) return props.post.cover_image
+  const match = /<img[^>]+src\s*=\s*"([^">]+)"/i.exec(props.post.content || '')
+  return match?.[1] || null
+})
+
 // 从正文提取纯文本摘要，截断到合适长度
 const excerpt = computed(() => {
   const html = props.post.content || ''
@@ -56,6 +63,9 @@ function formatDate(d) {
       </div>
       <h3 class="home-post-title">{{ post.title }}</h3>
       <p class="home-post-excerpt">{{ excerpt }}</p>
+    </div>
+    <div v-if="coverSrc" class="home-post-cover">
+      <img :src="coverSrc" :alt="post.title" loading="lazy" />
     </div>
   </router-link>
 </template>
@@ -140,6 +150,27 @@ function formatDate(d) {
   overflow: hidden;
 }
 
+/* 封面图 */
+.home-post-cover {
+  flex-shrink: 0;
+  width: 120px;
+  height: 80px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  align-self: center;
+}
+
+.home-post-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-base);
+}
+
+.home-post:hover .home-post-cover img {
+  transform: scale(1.08);
+}
+
 @media (max-width: 768px) {
   .home-post {
     padding: 14px 16px;
@@ -152,6 +183,11 @@ function formatDate(d) {
 
   .home-post-excerpt {
     font-size: 12px;
+  }
+
+  .home-post-cover {
+    width: 90px;
+    height: 64px;
   }
 }
 </style>

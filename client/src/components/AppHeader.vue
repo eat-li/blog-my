@@ -15,6 +15,7 @@ const navItems = [
       { path: '/articles', label: '文章', icon: '✎', color: 'var(--color-accent-article)' },
       { path: '/anime', label: '动漫', icon: '◉', color: 'var(--color-accent-anime)' },
       { path: '/galgame', label: 'Galgame', icon: '◈', color: 'var(--color-accent-galgame)' },
+      { path: '/articles/archive', label: '归档', icon: '☰', color: 'var(--color-primary)' },
     ]
   },
   { path: '/guestbook', label: '留言板', icon: '☰' },
@@ -144,8 +145,10 @@ watch(() => router.currentRoute.value.path, () => {
 
 <style scoped>
 .app-header {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 1000;
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur-strong);

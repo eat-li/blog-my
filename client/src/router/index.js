@@ -13,6 +13,11 @@ const routes = [
     component: () => import('../views/articles/ArticleList.vue')
   },
   {
+    path: '/articles/archive',
+    name: 'ArticleArchive',
+    component: () => import('../views/articles/Archive.vue')
+  },
+  {
     path: '/articles/:id',
     name: 'ArticleDetail',
     component: () => import('../views/articles/ArticleDetail.vue')

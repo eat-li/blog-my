@@ -21,6 +21,13 @@ exports.heatmap = async (req, res, next) => {
   } catch (err) { next(err) }
 }
 
+exports.archive = async (req, res, next) => {
+  try {
+    const result = await postService.getArchive()
+    res.json(result)
+  } catch (err) { next(err) }
+}
+
 exports.detail = async (req, res, next) => {
   try {
     const post = await postService.getById(req.params.id)

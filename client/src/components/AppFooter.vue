@@ -59,7 +59,8 @@ async function fetchFooterData() {
 
   try {
     const stats = await statsApi.profile()
-    totalViews.value = stats.totalViews || 0
+    const raw = stats?.totalViews ?? stats?.data?.totalViews ?? 0
+    totalViews.value = Number(raw) || 0
   } catch (e) { /* ignore */ }
 }
 
@@ -115,7 +116,7 @@ onUnmounted(() => document.removeEventListener('visibilitychange', handleVisibil
           书写每一行
         </p>
         <p class="footer-uptime" v-if="hasLaunched">
-          <span class="uptime-label">🕰 就连永恒，也是由这样的瞬间构成。见证微小：</span>
+          <span class="uptime-label"> 就连永恒，也是由这样的瞬间构成。见证微小：</span>
           <span class="uptime-value">
             {{ String(siteUptime.days).padStart(3, '0') }}<span class="uptime-unit">天</span>
             {{ String(siteUptime.hours).padStart(2, '0') }}<span class="uptime-unit">时</span>
@@ -124,7 +125,7 @@ onUnmounted(() => document.removeEventListener('visibilitychange', handleVisibil
           </span>
         </p>
         <p class="footer-views" v-if="totalViews > 0">
-          <span class="views-label">👁 总访问</span>
+          <span class="views-label"> 总访问</span>
           <span class="views-value">
             {{ totalViews.toLocaleString() }}<span class="views-unit">次</span>
           </span>

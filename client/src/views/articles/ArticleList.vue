@@ -59,6 +59,7 @@ const totalPages = () => Math.ceil(total.value / pageSize) || 1
     <div class="page-header">
       <h1 class="page-title">✎ 文章</h1>
       <p class="page-desc">技术、生活与思考</p>
+      <router-link to="/articles/archive" class="archive-link glass-btn">查看归档</router-link>
     </div>
 
     <!-- 分类筛选 -->
@@ -117,6 +118,13 @@ const totalPages = () => Math.ceil(total.value / pageSize) || 1
   color: var(--color-text-muted);
   font-size: 15px;
   margin-top: 8px;
+}
+
+.archive-link {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 13px;
+  padding: 6px 18px;
 }
 
 .category-filter {

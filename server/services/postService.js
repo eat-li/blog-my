@@ -69,6 +69,26 @@ class PostService {
     return { heatmap }
   }
 
+  async getArchive() {
+    const posts = await Post.findAll({
+      where: { status: 'published' },
+      attributes: ['id', 'type', 'title', 'createdAt'],
+      order: [['createdAt', 'DESC']]
+    })
+
+    const archive = {}
+    posts.forEach(post => {
+      const d = new Date(post.createdAt)
+      const year = d.getFullYear()
+      const month = d.getMonth() + 1
+      if (!archive[year]) archive[year] = {}
+      if (!archive[year][month]) archive[year][month] = []
+      archive[year][month].push(post)
+    })
+
+    return archive
+  }
+
   async getById(id) {
     const post = await Post.findByPk(id, {
       include: [
