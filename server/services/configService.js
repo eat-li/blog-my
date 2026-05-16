@@ -1,10 +1,16 @@
 const { Config } = require('../models')
 
+const SENSITIVE_KEYS = ['ai_config']
+
 class ConfigService {
   async getPublic() {
     const configs = await Config.findAll()
     const result = {}
-    configs.forEach(c => { result[c.key] = c.value })
+    configs.forEach(c => {
+      if (!SENSITIVE_KEYS.includes(c.key)) {
+        result[c.key] = c.value
+      }
+    })
     return result
   }
 

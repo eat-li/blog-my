@@ -17,6 +17,7 @@ export function useSettings() {
   const newSocial = ref({ key: '', url: '' })
   const githubConfig = ref({ repos: [] })
   const music = ref({ songs: [], autoplay: true, volume: 0.5, shuffle: false })
+  const aiConfig = ref({ api_url: '', api_key: '', model: 'deepseek-chat' })
 
   // 关于页面默认内容
   const aboutPage = ref({
@@ -74,6 +75,7 @@ export function useSettings() {
     { id: 'github', label: 'GitHub', icon: '⬡' },
     { id: 'about', label: '关于页面', icon: '◎' },
     { id: 'music', label: '背景音乐', icon: '♬' },
+    { id: 'ai', label: 'AI 设置', icon: '✦' },
   ]
 
   function showSuccess(msg) {
@@ -100,6 +102,11 @@ export function useSettings() {
       }
       if (config.music) music.value = config.music
       if (config.about_page) aboutPage.value = { ...aboutPage.value, ...config.about_page }
+      // AI 配置需要单独加载（getPublic 会过滤掉）
+      try {
+        const aiRes = await configApi.get('ai_config')
+        if (aiRes.ai_config) aiConfig.value = { ...aiConfig.value, ...aiRes.ai_config }
+      } catch {}
     } catch (e) {
       if (e.response?.status === 401) router.push('/admin/login')
       else loadError.value = '加载配置失败'
@@ -179,13 +186,24 @@ export function useSettings() {
     } finally { saving.value = false }
   }
 
+  // AI 配置
+  async function saveAiConfig() {
+    saving.value = true
+    try {
+      await configApi.update('ai_config', aiConfig.value)
+      showSuccess('AI 配置已保存')
+    } catch (e) {
+      loadError.value = e.response?.data?.message || '保存失败'
+    } finally { saving.value = false }
+  }
+
   return {
     activeTab, saving, loadError, successMsg, tabs,
-    siteInfo, socialLinks, newSocial, githubConfig, aboutPage, music,
+    siteInfo, socialLinks, newSocial, githubConfig, aboutPage, music, aiConfig,
     loadAll,
     saveSite, addSocial, removeSocial, saveSocial,
     saveGithub, addGithubRepo, removeGithubRepo,
     addSong, removeSong, saveMusic,
-    saveAbout,
+    saveAbout, saveAiConfig,
   }
 }

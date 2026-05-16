@@ -1,6 +1,4 @@
-const AI_API_URL = process.env.AI_API_URL || 'https://api.deepseek.com/v1'
-const AI_API_KEY = process.env.AI_API_KEY
-const AI_MODEL = process.env.AI_MODEL || 'deepseek-chat'
+const configService = require('./configService')
 
 const INSTRUCTIONS = {
   polish: {
@@ -30,8 +28,15 @@ class AiService {
   }
 
   async *stream(text, instruction) {
-    if (!AI_API_KEY) {
-      throw Object.assign(new Error('未配置 AI_API_KEY'), { status: 500 })
+    // 优先从数据库读取，fallback 到环境变量
+    const saved = await configService.getByKey('ai_config').catch(() => null)
+    const cfg = saved?.ai_config || {}
+    const apiUrl = cfg.api_url || process.env.AI_API_URL || 'https://api.deepseek.com/v1'
+    const apiKey = cfg.api_key || process.env.AI_API_KEY
+    const model = cfg.model || process.env.AI_MODEL || 'deepseek-chat'
+
+    if (!apiKey) {
+      throw Object.assign(new Error('未配置 API Key，请在设置中填写'), { status: 500 })
     }
 
     const inst = INSTRUCTIONS[instruction]
@@ -47,14 +52,14 @@ class AiService {
       throw Object.assign(new Error('文本长度不能超过 5000 字'), { status: 400 })
     }
 
-    const response = await fetch(`${AI_API_URL}/chat/completions`, {
+    const response = await fetch(`${apiUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${AI_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: AI_MODEL,
+        model,
         stream: true,
         messages: [
           { role: 'system', content: inst.system },

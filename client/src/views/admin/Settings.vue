@@ -5,12 +5,12 @@ import { useOssUpload } from '../../composables/useOssUpload'
 
 const {
   activeTab, saving, loadError, successMsg, tabs,
-  siteInfo, socialLinks, newSocial, githubConfig, aboutPage, music,
+  siteInfo, socialLinks, newSocial, githubConfig, aboutPage, music, aiConfig,
   loadAll,
   saveSite, addSocial, removeSocial, saveSocial,
   saveGithub, addGithubRepo, removeGithubRepo,
   addSong, removeSong, saveMusic,
-  saveAbout,
+  saveAbout, saveAiConfig,
 } = useSettings()
 
 onMounted(loadAll)
@@ -377,6 +377,26 @@ async function handleCoverUpload(event, index) {
         {{ saving ? '保存中…' : '保存设置' }}
       </button>
     </div>
+
+    <!-- ===== AI 设置 ===== -->
+    <div v-if="activeTab === 'ai'" class="tab-content">
+      <p class="ai-hint">配置 DeepSeek 或其他兼容 OpenAI 格式的 AI 服务，用于编辑器中的写作辅助功能。</p>
+      <div class="set-field">
+        <label>API URL</label>
+        <input v-model="aiConfig.api_url" class="glass-input" placeholder="https://api.deepseek.com/v1" />
+      </div>
+      <div class="set-field">
+        <label>API Key</label>
+        <input v-model="aiConfig.api_key" class="glass-input" type="password" placeholder="sk-..." />
+      </div>
+      <div class="set-field">
+        <label>模型</label>
+        <input v-model="aiConfig.model" class="glass-input" placeholder="deepseek-chat" />
+      </div>
+      <button class="glass-btn set-save-btn" @click="saveAiConfig" :disabled="saving">
+        {{ saving ? '保存中…' : '保存 AI 配置' }}
+      </button>
+    </div>
   </div>
 </template>
 
@@ -656,6 +676,12 @@ async function handleCoverUpload(event, index) {
 }
 
 .capitalize { text-transform: capitalize; }
+
+.ai-hint {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
 
 /* 关于页面编辑 */
 .about-section-edit {
