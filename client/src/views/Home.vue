@@ -446,6 +446,7 @@ onUnmounted(() => {
   gap: 32px;
   padding: 36px 40px;
   margin-bottom: 40px;
+  max-width: 680px;
   transition: all var(--transition-base);
 }
 
