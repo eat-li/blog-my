@@ -1,19 +1,19 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { messageApi } from '../api'
+import { messageApi, configApi } from '../api'
 
 const messages = ref([])
 const total = ref(0)
 const page = ref(1)
 const pageSize = 10
 const loading = ref(true)
+const siteInfo = ref(null)
 
 const form = ref({ nickname: '', email: '', content: '' })
 const submitting = ref(false)
 const cooldown = ref(0) // 提交冷却倒计时（秒）
 const formError = ref('')
 const formSuccess = ref(false)
-const replyTo = ref(null)
 
 async function fetchMessages() {
   loading.value = true
@@ -46,10 +46,8 @@ async function submitMessage() {
   try {
     const data = { nickname: form.value.nickname.trim(), content: form.value.content.trim() }
     if (form.value.email.trim()) data.email = form.value.email.trim()
-    if (replyTo.value) data.parent_id = replyTo.value.id
     await messageApi.create(data)
     form.value = { nickname: '', email: '', content: '' }
-    replyTo.value = null
     formSuccess.value = true
     setTimeout(() => { formSuccess.value = false }, 3000)
     page.value = 1
@@ -67,17 +65,6 @@ async function submitMessage() {
   }
 }
 
-function replyToMessage(msg) {
-  replyTo.value = msg
-  form.value.content = `@${msg.nickname} `
-  window.scrollTo({ top: 200, behavior: 'smooth' })
-}
-
-function cancelReply() {
-  replyTo.value = null
-  form.value.content = ''
-}
-
 function changePage(p) {
   page.value = p
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -90,7 +77,10 @@ function formatDate(d) {
   })
 }
 
-onMounted(fetchMessages)
+onMounted(async () => {
+  configApi.getPublic().then(config => { siteInfo.value = config?.site_info || null }).catch(() => {})
+  fetchMessages()
+})
 watch(page, fetchMessages)
 
 const totalPages = () => Math.ceil(total.value / pageSize) || 1
@@ -100,17 +90,13 @@ const totalPages = () => Math.ceil(total.value / pageSize) || 1
   <div class="page guestbook">
     <div class="page-header">
       <h1 class="page-title">☰ 留言板</h1>
-      <p class="page-desc">说点什么吧，每条留言都会被珍惜 ✨</p>
+      <p class="page-desc">说点什么吧，每条留言都会被珍惜 </p>
     </div>
 
     <!-- 留言表单 -->
     <div class="message-form glass-card">
       <div class="form-header">
         <span class="form-title">写下留言</span>
-        <span class="form-replying" v-if="replyTo">
-          回复 @{{ replyTo.nickname }}
-          <button class="cancel-reply" @click="cancelReply">×</button>
-        </span>
       </div>
 
       <div class="form-row">
@@ -125,7 +111,7 @@ const totalPages = () => Math.ceil(total.value / pageSize) || 1
           v-model="form.email"
           type="email"
           class="glass-input"
-          placeholder="邮箱（可选，用于头像）"
+          placeholder="邮箱（可选）"
         />
       </div>
 
@@ -169,17 +155,19 @@ const totalPages = () => Math.ceil(total.value / pageSize) || 1
               <span class="message-date">{{ formatDate(msg.createdAt) }}</span>
             </div>
             <p class="message-content">{{ msg.content }}</p>
-            <button class="message-reply-btn" @click="replyToMessage(msg)">回复</button>
 
             <!-- 回复列表 -->
-            <div class="message-replies" v-if="msg.replies?.length">
-              <div v-for="reply in msg.replies" :key="reply.id" class="reply-item">
-                <div class="reply-avatar">
-                  <span class="avatar-text-sm">{{ reply.nickname.charAt(0).toUpperCase() }}</span>
+            <div class="message-replies" v-if="msg.Messages?.length">
+              <div v-for="reply in msg.Messages" :key="reply.id" class="reply-item">
+                <div class="reply-avatar" :class="{ 'reply-avatar--admin': reply.nickname === '博主' }">
+                  <img v-if="reply.nickname === '博主' && siteInfo?.avatar" :src="siteInfo.avatar" class="reply-avatar-img" alt="avatar" />
+                  <span v-else class="avatar-text-sm">{{ reply.nickname.charAt(0).toUpperCase() }}</span>
                 </div>
                 <div class="reply-body">
                   <div class="reply-meta">
-                    <span class="reply-author">{{ reply.nickname }}</span>
+                    <span class="reply-author" :class="{ 'reply-author--admin': reply.nickname === '博主' }">
+                      {{ reply.nickname === '博主' ? (siteInfo?.title || '博主') : reply.nickname }}
+                    </span>
                     <span class="reply-date">{{ formatDate(reply.createdAt) }}</span>
                   </div>
                   <p class="reply-content">{{ reply.content }}</p>
@@ -191,8 +179,8 @@ const totalPages = () => Math.ceil(total.value / pageSize) || 1
       </div>
 
       <div v-else class="empty-state">
-        <span class="empty-icon">💬</span>
-        <p>还没有留言… 成为第一个留下足迹的人吧 ✨</p>
+        <span class="empty-icon"></span>
+        <p>还没有留言… 成为第一个留下足迹的人吧 </p>
       </div>
 
       <div class="pagination" v-if="totalPages() > 1">
@@ -238,28 +226,6 @@ const totalPages = () => Math.ceil(total.value / pageSize) || 1
   font-family: var(--font-serif);
   font-size: 17px;
   font-weight: 700;
-}
-
-.form-replying {
-  font-size: 13px;
-  color: var(--color-primary);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.cancel-reply {
-  background: none;
-  border: none;
-  color: var(--color-text-muted);
-  font-size: 18px;
-  cursor: pointer;
-  padding: 0 4px;
-  line-height: 1;
-}
-
-.cancel-reply:hover {
-  color: var(--color-accent-anime);
 }
 
 .form-row {
@@ -365,21 +331,6 @@ const totalPages = () => Math.ceil(total.value / pageSize) || 1
   color: var(--color-text-secondary);
 }
 
-.message-reply-btn {
-  background: none;
-  border: none;
-  font-size: 12px;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  padding: 4px 0;
-  margin-top: 8px;
-  transition: color var(--transition-fast);
-}
-
-.message-reply-btn:hover {
-  color: var(--color-primary);
-}
-
 /* 回复 */
 .message-replies {
   margin-top: 16px;
@@ -441,6 +392,21 @@ const totalPages = () => Math.ceil(total.value / pageSize) || 1
   font-size: 14px;
   color: var(--color-text-secondary);
   line-height: 1.6;
+}
+
+.reply-avatar--admin {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent-article));
+}
+
+.reply-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.reply-author--admin {
+  color: var(--color-primary);
 }
 
 .empty-state {

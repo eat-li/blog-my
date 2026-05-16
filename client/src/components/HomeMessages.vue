@@ -1,10 +1,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { messageApi } from '../api'
+import { messageApi, configApi } from '../api'
 
 const messages = ref([])
 const total = ref(0)
 const loading = ref(true)
+const siteInfo = ref(null)
 
 const form = ref({ nickname: '', content: '' })
 const submitting = ref(false)
@@ -65,7 +66,10 @@ function formatDate(d) {
   return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
 }
 
-onMounted(fetchMessages)
+onMounted(() => {
+  configApi.getPublic().then(config => { siteInfo.value = config?.site_info || null }).catch(() => {})
+  fetchMessages()
+})
 </script>
 
 <template>
@@ -127,7 +131,9 @@ onMounted(fetchMessages)
           <!-- 回复 -->
           <div class="hm-replies" v-if="msg.Messages?.length">
             <div v-for="reply in msg.Messages" :key="reply.id" class="hm-reply">
-              <span class="hm-reply-author">{{ reply.nickname }}</span>
+              <span class="hm-reply-author" :class="{ 'hm-reply-author--admin': reply.nickname === '博主' }">
+                {{ reply.nickname === '博主' ? (siteInfo?.title || '博主') : reply.nickname }}
+              </span>
               <span class="hm-reply-text">{{ reply.content }}</span>
             </div>
           </div>
@@ -302,6 +308,10 @@ onMounted(fetchMessages)
   font-weight: 600;
   color: var(--color-text);
   margin-right: 6px;
+}
+
+.hm-reply-author--admin {
+  color: var(--color-primary);
 }
 
 .hm-reply-text {

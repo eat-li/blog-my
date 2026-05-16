@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { messageApi } from '../../api'
+import { messageApi, configApi } from '../../api'
 import { useConfirm } from '../../composables/useConfirm'
 
 const router = useRouter()
@@ -12,10 +12,14 @@ const loading = ref(false)
 const filterStatus = ref('')
 const page = ref(1)
 const pageSize = 15
+const siteInfo = ref(null)
 
 watch(filterStatus, () => { page.value = 1; fetchMessages() })
 watch(page, fetchMessages)
-onMounted(fetchMessages)
+onMounted(() => {
+  configApi.getPublic().then(config => { siteInfo.value = config?.site_info || null }).catch(() => {})
+  fetchMessages()
+})
 
 async function fetchMessages() {
   loading.value = true
@@ -56,8 +60,46 @@ async function handleDelete(id) {
   }
 }
 
+async function handleDeleteReply(id) {
+  if (!await confirm('确定删除这条回复？')) return
+  try {
+    await messageApi.delete(id)
+    fetchMessages()
+  } catch (e) {
+    await showAlert(e.response?.data?.message || '删除失败')
+  }
+}
+
 const statusMap = { pending: '待审核', approved: '已通过', rejected: '已拒绝' }
 const statusColor = { pending: 'var(--color-accent-article)', approved: 'var(--color-accent-galgame)', rejected: 'var(--color-accent-anime)' }
+
+const replyTo = ref(null)
+const replyContent = ref('')
+const replySubmitting = ref(false)
+
+function startReply(msg) {
+  replyTo.value = msg.id
+  replyContent.value = ''
+}
+
+function cancelReply() {
+  replyTo.value = null
+  replyContent.value = ''
+}
+
+async function handleReply() {
+  if (!replyContent.value.trim()) return
+  replySubmitting.value = true
+  try {
+    await messageApi.reply(replyTo.value, replyContent.value.trim())
+    cancelReply()
+    fetchMessages()
+  } catch (e) {
+    await showAlert(e.response?.data?.message || '回复失败')
+  } finally {
+    replySubmitting.value = false
+  }
+}
 </script>
 
 <template>
@@ -88,6 +130,36 @@ const statusColor = { pending: 'var(--color-accent-article)', approved: 'var(--c
           <span class="ma-ip">{{ msg.ip }}</span>
         </div>
         <p class="ma-content">{{ msg.content }}</p>
+
+        <!-- 回复列表 -->
+        <div class="ma-replies" v-if="msg.Messages?.length">
+          <div v-for="reply in msg.Messages" :key="reply.id" class="ma-reply-item">
+            <span class="ma-reply-author" :class="{ 'ma-reply-author--admin': reply.nickname === '博主' }">
+              {{ reply.nickname === '博主' ? (siteInfo?.title || '博主') : reply.nickname }}
+            </span>
+            <span class="ma-reply-content">{{ reply.content }}</span>
+            <span class="ma-reply-date">{{ formatDate(reply.createdAt) }}</span>
+            <button class="ma-reply-del" @click="handleDeleteReply(reply.id)" title="删除回复">×</button>
+          </div>
+        </div>
+
+        <!-- 回复表单 -->
+        <div class="ma-reply-form" v-if="replyTo === msg.id">
+          <textarea
+            v-model="replyContent"
+            class="glass-input ma-reply-input"
+            placeholder="输入回复内容..."
+            maxlength="500"
+            rows="3"
+          />
+          <div class="ma-reply-actions">
+            <button class="glass-btn ma-reply-submit" :disabled="replySubmitting || !replyContent.trim()" @click="handleReply">
+              {{ replySubmitting ? '提交中...' : '发送回复' }}
+            </button>
+            <button class="glass-btn ma-reply-cancel" @click="cancelReply">取消</button>
+          </div>
+        </div>
+
         <div class="ma-card-bottom">
           <span class="ma-status" :style="{ color: statusColor[msg.status] }">
             {{ statusMap[msg.status] }}
@@ -95,8 +167,10 @@ const statusColor = { pending: 'var(--color-accent-article)', approved: 'var(--c
           <div class="ma-actions" v-if="msg.status === 'pending'">
             <button class="action-btn glass-btn action-approve" @click="handleReview(msg.id, 'approved')">✓ 通过</button>
             <button class="action-btn glass-btn action-reject" @click="handleReview(msg.id, 'rejected')">✕ 拒绝</button>
+            <button class="action-btn glass-btn action-reply" @click="startReply(msg)">回复</button>
           </div>
           <div class="ma-actions" v-else>
+            <button class="action-btn glass-btn action-reply" @click="startReply(msg)">回复</button>
             <button class="action-btn glass-btn action-delete" @click="handleDelete(msg.id)">删除</button>
           </div>
         </div>
@@ -215,6 +289,99 @@ const statusColor = { pending: 'var(--color-accent-article)', approved: 'var(--c
 .action-approve:hover { color: var(--color-accent-galgame); border-color: rgba(123,168,114,0.3); }
 .action-reject:hover { color: var(--color-accent-anime); border-color: rgba(232,91,91,0.3); }
 .action-delete:hover { color: var(--color-accent-anime); border-color: rgba(232,91,91,0.3); }
+.action-reply:hover { color: var(--color-primary); border-color: rgba(139,69,19,0.3); }
+
+/* 回复列表 */
+.ma-replies {
+  margin: 10px 0 4px;
+  padding-left: 14px;
+  border-left: 2px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ma-reply-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.ma-reply-author {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.ma-reply-author--admin {
+  color: var(--color-primary);
+}
+
+.ma-reply-content {
+  color: var(--color-text-secondary);
+  flex: 1;
+  min-width: 0;
+}
+
+.ma-reply-date {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+
+.ma-reply-del {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  margin-left: auto;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: all var(--transition-fast);
+}
+
+.ma-reply-item:hover .ma-reply-del {
+  opacity: 1;
+}
+
+.ma-reply-del:hover {
+  color: var(--color-accent-anime);
+}
+
+/* 回复表单 */
+.ma-reply-form {
+  margin: 10px 0 4px;
+}
+
+.ma-reply-input {
+  width: 100%;
+  resize: vertical;
+  min-height: 70px;
+  font-family: var(--font-sans);
+  margin-bottom: 8px;
+}
+
+.ma-reply-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ma-reply-submit {
+  font-size: 13px;
+  padding: 6px 18px;
+}
+
+.ma-reply-cancel {
+  font-size: 13px;
+  padding: 6px 14px;
+  color: var(--color-text-muted);
+}
 
 .ma-empty {
   padding: 48px;

@@ -20,6 +20,9 @@ router.post('/', [
 ], validate, messageController.create)
 router.get('/admin', authMiddleware, messageController.getAdmin)
 router.put('/:id/review', authMiddleware, messageController.review)
+router.post('/:id/reply', authMiddleware, [
+  body('content').trim().notEmpty().withMessage('回复内容不能为空')
+], validate, messageController.reply)
 router.delete('/:id', authMiddleware, messageController.delete)
 
 module.exports = router

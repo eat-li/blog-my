@@ -35,6 +35,7 @@ export const messageApi = {
   create: (data) => request.post('/messages', data),
   adminList: (params) => request.get('/messages/admin', { params }),
   review: (id, status) => request.put(`/messages/${id}/review`, { status }),
+  reply: (id, content) => request.post(`/messages/${id}/reply`, { content }),
   delete: (id) => request.delete(`/messages/${id}`)
 }
 

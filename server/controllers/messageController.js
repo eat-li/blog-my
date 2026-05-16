@@ -28,6 +28,13 @@ exports.review = async (req, res, next) => {
   } catch (err) { next(err) }
 }
 
+exports.reply = async (req, res, next) => {
+  try {
+    const message = await messageService.adminReply(req.params.id, req.body.content)
+    res.status(201).json({ message })
+  } catch (err) { next(err) }
+}
+
 exports.delete = async (req, res, next) => {
   try {
     await messageService.delete(req.params.id)

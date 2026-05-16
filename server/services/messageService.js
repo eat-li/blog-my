@@ -49,12 +49,13 @@ class MessageService {
 
   async getAdminList(query) {
     const { status, page = 1, pageSize = 20 } = query
-    const where = {}
+    const where = { parent_id: null }
     if (status) where.status = status
 
     const offset = (page - 1) * pageSize
     const { count, rows } = await Message.findAndCountAll({
       where,
+      include: [{ model: Message, as: 'Messages', required: false }],
       order: [['createdAt', 'DESC']],
       offset: parseInt(offset),
       limit: parseInt(pageSize)
@@ -77,6 +78,20 @@ class MessageService {
     const message = await Message.findByPk(id)
     if (!message) throw Object.assign(new Error('留言不存在'), { status: 404 })
     await message.destroy()
+  }
+
+  async adminReply(parentId, content) {
+    const parent = await Message.findByPk(parentId)
+    if (!parent) throw Object.assign(new Error('留言不存在'), { status: 404 })
+    if (!content || content.trim().length < 2 || content.trim().length > 500) {
+      throw Object.assign(new Error('回复内容需要 2-500 个字符'), { status: 400 })
+    }
+    return await Message.create({
+      nickname: '博主',
+      content: sanitize(content.trim()),
+      parent_id: parentId,
+      status: 'approved'
+    })
   }
 }
 
