@@ -12,7 +12,7 @@ git pull
 
 echo "📦 安装后端依赖..."
 cd server
-pnpm install --production false
+pnpm install --prod
 
 echo "📦 安装前端依赖..."
 cd ../client

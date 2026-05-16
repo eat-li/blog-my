@@ -222,6 +222,11 @@ function formatDate(dateStr) {
   gap: 24px;
 }
 
+.dash-section {
+  min-width: 0;
+  overflow: hidden;
+}
+
 .section-head {
   display: flex;
   align-items: center;
