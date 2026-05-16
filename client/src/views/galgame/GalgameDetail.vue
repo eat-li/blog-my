@@ -4,13 +4,13 @@ import { useRoute } from 'vue-router'
 import { postApi } from '../../api'
 import { useHighlight } from '../../composables/useHighlight'
 
-const contentRef = ref(null)
-useHighlight(contentRef, computed(() => post.value?.content))
-
 const route = useRoute()
 const post = ref(null)
 const loading = ref(true)
 const error = ref(null)
+
+const contentRef = ref(null)
+useHighlight(contentRef, computed(() => post.value?.content))
 
 const metadata = computed(() => post.value?.metadata || {})
 const writingNote = computed(() => metadata.value?.writing_note)

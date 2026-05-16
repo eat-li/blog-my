@@ -1,10 +1,10 @@
-const { Op } = require('sequelize')
+const { Op, fn } = require('sequelize')
 const { Post, Category, Tag } = require('../models')
 const { sanitize } = require('../utils/sanitize')
 
 class PostService {
   async list(query) {
-    const { type, category_id, tag_id, status = 'published', page = 1, pageSize = 10 } = query
+    const { type, category_id, tag_id, status = 'published', page = 1, pageSize = 10, random } = query
     const where = {}
     if (status && status !== 'all') where.status = status
     if (type) where.type = type
@@ -22,10 +22,12 @@ class PostService {
       })
     }
 
+    const order = random === 'true' ? [[fn('RAND')]] : [['createdAt', 'DESC']]
+
     const { count, rows } = await Post.findAndCountAll({
       where,
       include,
-      order: [['createdAt', 'DESC']],
+      order,
       offset: parseInt(offset),
       limit: parseInt(pageSize)
     })

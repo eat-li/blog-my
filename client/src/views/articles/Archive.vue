@@ -83,31 +83,33 @@ onMounted(async () => {
           <span class="year-arrow" :class="{ open: expandedYears.has(year) }">›</span>
         </button>
 
-        <div v-if="expandedYears.has(year)" class="archive-months">
-          <div v-for="month in monthList(year)" :key="month" class="archive-month">
-            <button class="month-header" @click="toggleMonth(year, month)">
-              <span class="month-label">{{ String(month).padStart(2, '0') }} 月</span>
-              <span class="month-count">{{ archive[year][month].length }} 篇</span>
-              <span class="month-arrow" :class="{ open: expandedMonths.has(year + '-' + month) }">›</span>
-            </button>
+        <Transition name="expand">
+          <div v-if="expandedYears.has(year)" class="archive-months">
+            <div v-for="month in monthList(year)" :key="month" class="archive-month">
+              <button class="month-header" @click="toggleMonth(year, month)">
+                <span class="month-label">{{ String(month).padStart(2, '0') }} 月</span>
+                <span class="month-count">{{ archive[year][month].length }} 篇</span>
+                <span class="month-arrow" :class="{ open: expandedMonths.has(year + '-' + month) }">›</span>
+              </button>
 
-            <Transition name="slide">
-              <div v-if="expandedMonths.has(year + '-' + month)" class="archive-posts">
-                <router-link
-                  v-for="post in archive[year][month]"
-                  :key="post.id"
-                  :to="linkOf(post)"
-                  class="archive-item"
-                >
-                  <span class="item-dot" :style="{ background: typeColor[post.type] }" />
-                  <span class="item-type" :style="{ color: typeColor[post.type] }">{{ typeLabel[post.type] }}</span>
-                  <span class="item-title">{{ post.title }}</span>
-                  <span class="item-date">{{ formatDay(post.createdAt) }}</span>
-                </router-link>
-              </div>
-            </Transition>
+              <Transition name="expand">
+                <div v-if="expandedMonths.has(year + '-' + month)" class="archive-posts">
+                  <router-link
+                    v-for="post in archive[year][month]"
+                    :key="post.id"
+                    :to="linkOf(post)"
+                    class="archive-item"
+                  >
+                    <span class="item-dot" :style="{ background: typeColor[post.type] }" />
+                    <span class="item-type" :style="{ color: typeColor[post.type] }">{{ typeLabel[post.type] }}</span>
+                    <span class="item-title">{{ post.title }}</span>
+                    <span class="item-date">{{ formatDay(post.createdAt) }}</span>
+                  </router-link>
+                </div>
+              </Transition>
+            </div>
           </div>
-        </div>
+        </Transition>
       </div>
     </div>
 
@@ -195,7 +197,8 @@ onMounted(async () => {
 
 /* 月份块 */
 .archive-months {
-  padding: 0 24px 12px;
+  padding: 0 24px;
+  overflow: hidden;
 }
 
 .archive-month {
@@ -246,6 +249,7 @@ onMounted(async () => {
 /* 文章列表 */
 .archive-posts {
   padding: 4px 0 4px 12px;
+  overflow: hidden;
 }
 
 .archive-item {
@@ -294,22 +298,22 @@ onMounted(async () => {
 }
 
 /* 展开动画 */
-.slide-enter-active,
-.slide-leave-active {
-  transition: all 0.25s ease;
+.expand-enter-active,
+.expand-leave-active {
+  transition: max-height 0.3s ease, opacity 0.3s ease;
   overflow: hidden;
 }
 
-.slide-enter-from,
-.slide-leave-to {
-  opacity: 0;
+.expand-enter-from,
+.expand-leave-to {
   max-height: 0;
+  opacity: 0;
 }
 
-.slide-enter-to,
-.slide-leave-from {
+.expand-enter-to,
+.expand-leave-from {
+  max-height: 600px;
   opacity: 1;
-  max-height: 2000px;
 }
 
 /* 空状态 */
