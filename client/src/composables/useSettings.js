@@ -138,7 +138,7 @@ export function useSettings() {
 
   // GitHub
   function addGithubRepo() {
-    githubConfig.value.repos.push({ name: '', description: '', html_url: '', stargazers_count: 0, language: '', updated_at: '' })
+    githubConfig.value.repos.push({ name: '', description: '', html_url: '', stargazers_count: 0, language: '', language_color: '', updated_at: '' })
   }
   function removeGithubRepo(index) {
     githubConfig.value.repos.splice(index, 1)

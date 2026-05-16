@@ -8,6 +8,15 @@ import HomePostItem from '../components/HomePostItem.vue'
 import TypeWriter from '../components/TypeWriter.vue'
 import Calendar from '../components/Calendar.vue'
 import TimeProgress from '../components/TimeProgress.vue'
+import githubIcon from '../assets/github.svg'
+import bilibiliIcon from '../assets/bilibili.svg'
+import douyinIcon from '../assets/douyin.svg'
+
+const socialSvgMap = {
+  github: githubIcon,
+  bilibili: bilibiliIcon,
+  douyin: douyinIcon,
+}
 
 const latest = ref({ article: [], anime: [], galgame: [] })
 const stats = ref(null)
@@ -316,9 +325,18 @@ onUnmounted(() => {
             >
               <span
                 class="contact-icon"
-                :style="{ background: getSocialInfo(key)?.color || '#888' }"
+                :class="{ 'contact-icon-custom': socialSvgMap[key] }"
+                :style="{ background: socialSvgMap[key] ? 'transparent' : (getSocialInfo(key)?.color || '#888') }"
               >
-                <svg v-if="getSocialInfo(key)" width="14" height="14" :viewBox="getSocialInfo(key).viewBox">
+                <img
+                  v-if="socialSvgMap[key]"
+                  :src="socialSvgMap[key]"
+                  width="22"
+                  height="22"
+                  class="contact-icon-svg"
+                  :alt="getSocialInfo(key)?.label || key"
+                />
+                <svg v-else-if="getSocialInfo(key)" width="14" height="14" :viewBox="getSocialInfo(key).viewBox">
                   <path
                     v-for="(p, pi) in getSocialInfo(key).paths"
                     :key="pi"
@@ -355,7 +373,7 @@ onUnmounted(() => {
             <p class="sidebar-repo-desc" v-if="repo.description">{{ repo.description }}</p>
             <div class="sidebar-repo-foot">
               <span class="sidebar-repo-lang" v-if="repo.language">
-                <span class="lang-dot" :style="{ background: langColors[repo.language] || '#999' }" />
+                <span class="lang-dot" :style="{ background: repo.language_color || langColors[repo.language] || '#999' }" />
                 {{ repo.language }}
               </span>
             </div>
@@ -727,6 +745,15 @@ onUnmounted(() => {
 
 .contact-item:hover .contact-icon {
   transform: scale(1.1);
+}
+
+.contact-icon-custom {
+  border: 1px solid var(--glass-border);
+}
+
+.contact-icon-svg {
+  display: block;
+  object-fit: contain;
 }
 
 .contact-icon-text {

@@ -173,6 +173,7 @@ async function handleCoverUpload(event, index) {
           </div>
           <div class="song-item-row">
             <input v-model="repo.language" class="glass-input" placeholder="语言 (JavaScript/Vue/Python…)" style="flex:2" />
+            <input v-model="repo.language_color" class="glass-input" type="color" style="flex:0 0 40px; min-width:40px; padding:2px 4px" title="语言颜色" />
             <input v-model="repo.updated_at" class="glass-input" type="date" style="flex:2" />
           </div>
         </div>
