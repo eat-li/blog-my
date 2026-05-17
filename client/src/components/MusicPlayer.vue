@@ -157,7 +157,8 @@ watch(volume, (v) => { audio.volume = v })
     <!-- 迷你模式 -->
     <transition name="music-mini-fade">
       <div v-if="!expanded" class="music-mini glass-card" @click="expanded = true" title="展开播放器">
-        <span class="music-icon" :class="{ playing: isPlaying }">&#9835;</span>
+        <img v-if="currentSong?.cover" :src="currentSong.cover" :alt="currentSong.title" class="music-mini-cover" :class="{ paused: !isPlaying }" />
+        <span v-else class="music-icon" :class="{ playing: isPlaying }">&#9835;</span>
         <span class="music-title-mini">{{ currentSong?.title || '无标题' }}</span>
         <span class="music-artist-mini" v-if="currentSong?.artist">- {{ currentSong.artist }}</span>
         <span class="music-badge-mini" v-if="isPlaying">&#9835;</span>
@@ -171,6 +172,15 @@ watch(volume, (v) => { audio.volume = v })
         <div class="music-header">
           <span class="music-header-title">&#9835; 今の音楽</span>
           <button class="music-close" @click="expanded = false" title="收起">&#10005;</button>
+        </div>
+
+        <!-- 封面 -->
+        <div v-if="currentSong?.cover" class="music-cover-area">
+          <img :src="currentSong.cover" :alt="currentSong.title" class="music-cover-img" />
+          <div class="music-cover-meta">
+            <div class="music-cover-title">{{ currentSong?.title || '无标题' }}</div>
+            <div class="music-cover-artist" v-if="currentSong?.artist">{{ currentSong.artist }}</div>
+          </div>
         </div>
 
         <!-- 进度条 -->
@@ -218,7 +228,8 @@ watch(volume, (v) => { audio.volume = v })
             :class="{ active: item.index === currentIndex }"
             @click="selectSong(item.index)"
           >
-            <span class="music-playlist-index">
+            <img v-if="item.cover" :src="item.cover" :alt="item.title" class="music-playlist-cover" />
+            <span v-else class="music-playlist-index">
               {{ item.index === currentIndex ? (isPlaying ? '&#9835;' : '&#9632;') : item.index + 1 }}
             </span>
             <div class="music-playlist-info">
@@ -270,6 +281,24 @@ watch(volume, (v) => { audio.volume = v })
 @keyframes notePulse {
   0%, 100% { transform: scale(1); opacity: 0.8; }
   50% { transform: scale(1.2); opacity: 1; }
+}
+
+.music-mini-cover {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  animation: coverSpin 6s linear infinite;
+}
+
+.music-mini-cover.paused {
+  animation-play-state: paused;
+}
+
+@keyframes coverSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .music-title-mini {
@@ -344,6 +373,44 @@ watch(volume, (v) => { audio.volume = v })
 }
 
 .music-close:hover { color: var(--color-text); background: rgba(139, 69, 19, 0.06); }
+
+/* 封面区域 */
+.music-cover-area {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.music-cover-img {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.music-cover-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.music-cover-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-cover-artist {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
 
 /* 进度条 */
 .music-progress-area {
@@ -519,6 +586,14 @@ watch(volume, (v) => { audio.volume = v })
   color: var(--color-text-muted);
   width: 18px;
   text-align: center;
+  flex-shrink: 0;
+}
+
+.music-playlist-cover {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: cover;
   flex-shrink: 0;
 }
 
