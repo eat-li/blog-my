@@ -9,6 +9,35 @@ class RateLimiter {
   constructor(rules) {
     this.rules = rules
     this.store = new Map() // key: "ruleName:ip" → timestamps[]
+
+    // 定时清理过期条目，防止内存无限增长
+    // 取最小窗口的 1/5 作为清理间隔，但最少 30 秒
+    const minWindow = Math.min(...rules.map(r => r.windowMs))
+    const cleanupInterval = Math.max(minWindow / 5, 30 * 1000)
+    this._cleanupTimer = setInterval(() => this._cleanup(), cleanupInterval)
+    this._cleanupTimer.unref() // 不阻止进程退出
+  }
+
+  /**
+   * 内部清理：移除所有已过期的 timestamp 条目
+   */
+  _cleanup() {
+    const now = Date.now()
+    for (const [storeKey, timestamps] of this.store) {
+      // 从 storeKey 中提取 rule name，找到对应窗口
+      const ruleName = storeKey.split(':')[0]
+      const rule = this.rules.find(r => r.name === ruleName)
+      if (!rule) {
+        this.store.delete(storeKey)
+        continue
+      }
+      const alive = timestamps.filter(t => t > now - rule.windowMs)
+      if (alive.length === 0) {
+        this.store.delete(storeKey)
+      } else {
+        this.store.set(storeKey, alive)
+      }
+    }
   }
 
   /**

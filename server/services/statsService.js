@@ -3,22 +3,22 @@ const { Post } = require('../models')
 
 class StatsService {
   async getProfile() {
-    const [articles, anime, galgame] = await Promise.all([
+    // 并行查询：各类型计数 + 字数统计 + 总浏览量，一次搞定
+    const [articles, anime, galgame, charsResult, viewsResult] = await Promise.all([
       Post.count({ where: { type: 'article', status: 'published' } }),
       Post.count({ where: { type: 'anime', status: 'published' } }),
-      Post.count({ where: { type: 'galgame', status: 'published' } })
+      Post.count({ where: { type: 'galgame', status: 'published' } }),
+      // 用 SQL SUM(LENGTH(content)) 替代全量加载文章内容，避免内存爆炸
+      Post.findOne({
+        where: { status: 'published' },
+        attributes: [[fn('SUM', fn('LENGTH', col('content'))), 'totalChars']]
+      }),
+      Post.findOne({
+        where: { status: 'published' },
+        attributes: [[fn('SUM', col('views')), 'totalViews']]
+      })
     ])
-
-    const posts = await Post.findAll({
-      where: { status: 'published' },
-      attributes: ['content']
-    })
-    const totalChars = posts.reduce((sum, p) => sum + (p.content?.length || 0), 0)
-
-    const viewsResult = await Post.findOne({
-      where: { status: 'published' },
-      attributes: [[fn('SUM', col('views')), 'totalViews']]
-    })
+    const totalChars = charsResult?.get('totalChars') || 0
     const totalViews = viewsResult?.get('totalViews') || 0
 
     return { articles, anime, galgame, totalChars, totalViews, totalPosts: articles + anime + galgame }

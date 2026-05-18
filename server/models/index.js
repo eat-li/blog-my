@@ -33,7 +33,9 @@ async function syncDatabase() {
     await sequelize.sync()
     console.log('数据库表同步完成')
   } catch (error) {
+    // 数据库连接失败是致命错误，必须终止进程而非静默继续
     console.error('数据库同步失败:', error.message)
+    process.exit(1)
   }
 }
 

@@ -2,15 +2,19 @@ const path = require('path')
 const fs = require('fs')
 
 class UploadService {
+  // 懒初始化单例：首次调用时创建，后续复用同一个实例
   getOSSClient() {
-    const OSS = require('ali-oss')
-    const { OSS_REGION, OSS_ACCESS_KEY_ID, OSS_ACCESS_KEY_SECRET, OSS_BUCKET } = process.env
-    return new OSS({
-      region: OSS_REGION,
-      accessKeyId: OSS_ACCESS_KEY_ID,
-      accessKeySecret: OSS_ACCESS_KEY_SECRET,
-      bucket: OSS_BUCKET
-    })
+    if (!this._ossClient) {
+      const OSS = require('ali-oss')
+      const { OSS_REGION, OSS_ACCESS_KEY_ID, OSS_ACCESS_KEY_SECRET, OSS_BUCKET } = process.env
+      this._ossClient = new OSS({
+        region: OSS_REGION,
+        accessKeyId: OSS_ACCESS_KEY_ID,
+        accessKeySecret: OSS_ACCESS_KEY_SECRET,
+        bucket: OSS_BUCKET
+      })
+    }
+    return this._ossClient
   }
 
   async getPresignedUrl(dir, filename) {

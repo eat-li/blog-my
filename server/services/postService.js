@@ -1,5 +1,5 @@
 const { Op, fn } = require('sequelize')
-const { Post, Category, Tag } = require('../models')
+const { Post, Category, Tag, sequelize } = require('../models')
 const { sanitize } = require('../utils/sanitize')
 
 class PostService {
@@ -36,18 +36,19 @@ class PostService {
   }
 
   async getLatest() {
+    // 三种类型互不依赖，并行查询减少等待时间
     const types = ['article', 'anime', 'galgame']
-    const result = {}
-    for (const type of types) {
-      const posts = await Post.findAll({
-        where: { status: 'published', type },
-        include: [{ model: Category, attributes: ['id', 'name'] }],
-        order: [['createdAt', 'DESC']],
-        limit: 2
-      })
-      result[type] = posts
-    }
-    return result
+    const results = await Promise.all(
+      types.map(type =>
+        Post.findAll({
+          where: { status: 'published', type },
+          include: [{ model: Category, attributes: ['id', 'name'] }],
+          order: [['createdAt', 'DESC']],
+          limit: 2
+        })
+      )
+    )
+    return Object.fromEntries(types.map((type, i) => [type, results[i]]))
   }
 
   async getHeatmap() {
@@ -115,16 +116,24 @@ class PostService {
 
   async create(data, userId) {
     const { type, title, content, summary, cover_image, category_id, rating, metadata, status, tags } = data
-    const post = await Post.create({
-      type, title: sanitize(title), content: sanitize(content), summary, cover_image, category_id, rating, metadata,
-      status: status || 'draft',
-      user_id: userId
-    })
-    if (tags && tags.length > 0) {
-      const tagInstances = await Tag.findAll({ where: { id: tags } })
-      await post.setTags(tagInstances)
+    // 事务保护：文章创建和标签关联要么全部成功，要么全部回滚
+    const transaction = await sequelize.transaction()
+    try {
+      const post = await Post.create({
+        type, title: sanitize(title), content: sanitize(content), summary, cover_image, category_id, rating, metadata,
+        status: status || 'draft',
+        user_id: userId
+      }, { transaction })
+      if (tags && tags.length > 0) {
+        const tagInstances = await Tag.findAll({ where: { id: tags }, transaction })
+        await post.setTags(tagInstances, { transaction })
+      }
+      await transaction.commit()
+      return post
+    } catch (err) {
+      await transaction.rollback()
+      throw err
     }
-    return post
   }
 
   async update(id, data) {
@@ -141,12 +150,20 @@ class PostService {
           : data[field]
       }
     })
-    await post.update(filtered)
-    if (data.tags) {
-      const tagInstances = await Tag.findAll({ where: { id: data.tags } })
-      await post.setTags(tagInstances)
+    // 事务保护：文章更新和标签关联要么全部成功，要么全部回滚
+    const transaction = await sequelize.transaction()
+    try {
+      await post.update(filtered, { transaction })
+      if (data.tags) {
+        const tagInstances = await Tag.findAll({ where: { id: data.tags }, transaction })
+        await post.setTags(tagInstances, { transaction })
+      }
+      await transaction.commit()
+      return post
+    } catch (err) {
+      await transaction.rollback()
+      throw err
     }
-    return post
   }
 
   async delete(id) {

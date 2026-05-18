@@ -3,16 +3,19 @@ const express = require('express')
 const cors = require('cors')
 const helmet = require('helmet')
 const cookieParser = require('cookie-parser')
-const { syncDatabase } = require('./models')
+const { syncDatabase, sequelize } = require('./models')
 
 const app = express()
 const PORT = process.env.PORT || 3000
 
+// 安全头：CSP 策略
+// script-src 移除 unsafe-inline/unsafe-eval（Vue 生产构建为打包文件，不需要内联脚本或 eval）
+// style-src 保留 unsafe-inline（Vue scoped 样式依赖内联 style 属性）
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "blob:", "https://blog-saki.oss-cn-chengdu.aliyuncs.com"],
@@ -32,7 +35,8 @@ app.use(cors({
   credentials: true
 }))
 app.use(cookieParser())
-app.use(express.json({ limit: '50mb' }))
+// JSON body 限制为 10mb（base64 上传约膨胀 33%，10mb 可传 ~7.5MB 原始文件）；multipart 由 multer 单独控制
+app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true }))
 
 // 静态文件（上传目录）
@@ -64,25 +68,28 @@ if (isProduction) {
   })
 }
 
-// 错误处理
-app.use((err, req, res, next) => {
-  const status = err.status || 500
-  if (status >= 500) {
-    console.error(`[${status}] ${err.message}\n${err.stack}`)
-  } else {
-    console.warn(`[${status}] ${err.message}`)
-  }
-  res.status(status).json({
-    message: err.message || '服务器内部错误'
-  })
-})
+// 全局错误处理中间件
+const errorHandler = require('./middleware/errorHandler')
+app.use(errorHandler)
 
 // 启动
 async function start() {
   await syncDatabase()
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`服务器运行在 http://localhost:${PORT}`)
   })
+
+  // 优雅关闭：收到终止信号时先关闭 HTTP 连接，再断开数据库
+  const shutdown = async (signal) => {
+    console.log(`收到 ${signal}，正在优雅关闭...`)
+    server.close(async () => {
+      await sequelize.close()
+      console.log('数据库连接已关闭，进程退出')
+      process.exit(0)
+    })
+  }
+  process.on('SIGTERM', () => shutdown('SIGTERM'))
+  process.on('SIGINT', () => shutdown('SIGINT'))
 }
 
 if (process.env.NODE_ENV !== 'test') {
