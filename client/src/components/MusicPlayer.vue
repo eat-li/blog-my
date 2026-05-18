@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useMusicStore } from '../stores/music'
 import { configApi } from '../api'
@@ -9,8 +9,6 @@ const {
   songs, currentIndex, isPlaying, currentTime, duration,
   volume, shuffle, expanded, configLoaded, shuffledIndexes
 } = storeToRefs(store)
-
-const audio = new Audio()
 
 // 播放列表（支持洗牌显示）
 const displayPlaylist = computed(() => {
@@ -24,102 +22,26 @@ const currentSong = computed(() => store.currentSong)
 const progressPercent = computed(() => store.progressPercent)
 const hasSongs = computed(() => store.hasSongs)
 
-// —— 音频事件 ——
-function onLoadedMetadata() { store.setDuration(audio.duration) }
-function onTimeUpdate() { store.setTime(audio.currentTime) }
-function onEnded() { next() }
-function onError() {
-  setTimeout(() => { if (songs.value.length) next() }, 1000)
-}
-function onPlay() { store.setPlaying(true) }
-function onPause() { store.setPlaying(false) }
-
-function bindEvents() {
-  audio.addEventListener('loadedmetadata', onLoadedMetadata)
-  audio.addEventListener('timeupdate', onTimeUpdate)
-  audio.addEventListener('ended', onEnded)
-  audio.addEventListener('error', onError)
-  audio.addEventListener('play', onPlay)
-  audio.addEventListener('pause', onPause)
-}
-
-function unbindEvents() {
-  audio.removeEventListener('loadedmetadata', onLoadedMetadata)
-  audio.removeEventListener('timeupdate', onTimeUpdate)
-  audio.removeEventListener('ended', onEnded)
-  audio.removeEventListener('error', onError)
-  audio.removeEventListener('play', onPlay)
-  audio.removeEventListener('pause', onPause)
-}
-
-// —— 核心操作 ——
-function loadSong(index) {
-  if (!songs.value[index]) return
-  store.selectSong(index)
-  audio.src = songs.value[index].url
-  audio.load()
-}
-
-function playSong(index) {
-  loadSong(index)
-  audio.play().catch(() => {})
-}
-
-function togglePlay() {
-  if (!currentSong.value) return
-  if (isPlaying.value) {
-    audio.pause()
-  } else {
-    audio.play().catch(() => {})
-  }
-}
-
-function next() {
-  if (!songs.value.length) return
-  if (shuffle.value && shuffledIndexes.value.length) {
-    const pos = shuffledIndexes.value.indexOf(currentIndex.value)
-    const nextPos = (pos + 1) % shuffledIndexes.value.length
-    playSong(shuffledIndexes.value[nextPos])
-  } else {
-    playSong((currentIndex.value + 1) % songs.value.length)
-  }
-}
-
-function prev() {
-  if (!songs.value.length) return
-  if (shuffle.value && shuffledIndexes.value.length) {
-    const pos = shuffledIndexes.value.indexOf(currentIndex.value)
-    const prevPos = (pos - 1 + shuffledIndexes.value.length) % shuffledIndexes.value.length
-    playSong(shuffledIndexes.value[prevPos])
-  } else {
-    playSong((currentIndex.value - 1 + songs.value.length) % songs.value.length)
-  }
-}
-
-function toggleShuffle() {
-  store.toggleShuffle()
-}
-
-function setVolume(e) {
-  store.setVolume(parseFloat(e.target.value))
-}
-
+function togglePlay() { store.togglePlay() }
+function next() { store.next() }
+function prev() { store.prev() }
+function toggleShuffle() { store.toggleShuffle() }
+function setVolume(e) { store.setVolume(parseFloat(e.target.value)) }
 function seekTo(event) {
   const rect = event.currentTarget.getBoundingClientRect()
   const x = event.clientX - rect.left
   const pct = Math.max(0, Math.min(1, x / rect.width))
-  audio.currentTime = pct * duration.value
+  store.seekTo(pct)
 }
 
 function selectSong(index) {
   if (index === currentIndex.value && currentSong.value) {
-    togglePlay()
+    store.togglePlay()
     return
   }
-  playSong(index)
+  store.playSong(index)
 }
 
-// —— 时间格式化 ——
 function fmtTime(s) {
   if (!s || isNaN(s)) return '00:00'
   const m = Math.floor(s / 60)
@@ -127,29 +49,20 @@ function fmtTime(s) {
   return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
 }
 
-// —— 初始化 ——
 async function init() {
   try {
     const config = await configApi.getPublic()
     if (!store.initFromConfig(config)) return
-
-    audio.volume = volume.value
-    bindEvents()
-    loadSong(currentIndex.value)
+    store.initAudio()
   } catch { /* 加载失败，静默处理 */ }
 }
 
-// —— 生命周期 ——
 onMounted(init)
 
 onUnmounted(() => {
   store.persist()
-  unbindEvents()
-  audio.pause()
+  store.destroyAudio()
 })
-
-// 音量变化同步到 audio
-watch(volume, (v) => { audio.volume = v })
 </script>
 
 <template>
@@ -168,13 +81,11 @@ watch(volume, (v) => { audio.volume = v })
     <!-- 展开模式 -->
     <transition name="music-expand">
       <div v-if="expanded" class="music-expanded glass-card">
-        <!-- 头部 -->
         <div class="music-header">
           <span class="music-header-title">&#9835; 今の音楽</span>
           <button class="music-close" @click="expanded = false" title="收起">&#10005;</button>
         </div>
 
-        <!-- 封面 -->
         <div v-if="currentSong?.cover" class="music-cover-area">
           <img :src="currentSong.cover" :alt="currentSong.title" class="music-cover-img" />
           <div class="music-cover-meta">
@@ -183,7 +94,6 @@ watch(volume, (v) => { audio.volume = v })
           </div>
         </div>
 
-        <!-- 进度条 -->
         <div class="music-progress-area">
           <div class="music-progress-bar" @click="seekTo">
             <div class="music-progress-fill" :style="{ width: progressPercent + '%' }" />
@@ -195,7 +105,6 @@ watch(volume, (v) => { audio.volume = v })
           </div>
         </div>
 
-        <!-- 控制按钮 -->
         <div class="music-controls">
           <button class="music-btn" @click="prev" title="上一首">&#9198;</button>
           <button class="music-btn music-btn-play" @click="togglePlay" :title="isPlaying ? '暂停' : '播放'">
@@ -207,19 +116,11 @@ watch(volume, (v) => { audio.volume = v })
           </button>
         </div>
 
-        <!-- 音量 -->
         <div class="music-volume">
           <span class="music-volume-icon">&#9835;</span>
-          <input
-            type="range"
-            class="music-volume-slider"
-            min="0" max="1" step="0.01"
-            :value="volume"
-            @input="setVolume"
-          />
+          <input type="range" class="music-volume-slider" min="0" max="1" step="0.01" :value="volume" @input="setVolume" />
         </div>
 
-        <!-- 播放列表 -->
         <div class="music-playlist">
           <div
             v-for="item in displayPlaylist"
@@ -240,7 +141,6 @@ watch(volume, (v) => { audio.volume = v })
         </div>
       </div>
     </transition>
-
   </div>
 </template>
 
@@ -252,7 +152,6 @@ watch(volume, (v) => { audio.volume = v })
   z-index: 910;
 }
 
-/* 迷你模式 */
 .music-mini {
   display: flex;
   align-items: center;
@@ -326,7 +225,6 @@ watch(volume, (v) => { audio.volume = v })
   margin-left: -2px;
 }
 
-/* 展开模式 */
 .music-expanded {
   position: absolute;
   bottom: 0;
@@ -374,7 +272,6 @@ watch(volume, (v) => { audio.volume = v })
 
 .music-close:hover { color: var(--color-text); background: rgba(139, 69, 19, 0.06); }
 
-/* 封面区域 */
 .music-cover-area {
   padding: 12px 16px;
   display: flex;
@@ -412,7 +309,6 @@ watch(volume, (v) => { audio.volume = v })
   margin-top: 2px;
 }
 
-/* 进度条 */
 .music-progress-area {
   padding: 10px 16px 0;
 }
@@ -457,7 +353,6 @@ watch(volume, (v) => { audio.volume = v })
   color: var(--color-text-muted);
 }
 
-/* 控制按钮 */
 .music-controls {
   display: flex;
   align-items: center;
@@ -497,7 +392,6 @@ watch(volume, (v) => { audio.volume = v })
   transform: scale(1.1);
 }
 
-/* 音量 */
 .music-volume {
   display: flex;
   align-items: center;
@@ -541,7 +435,6 @@ watch(volume, (v) => { audio.volume = v })
   box-shadow: 0 0 4px var(--color-primary-glow);
 }
 
-/* 播放列表 */
 .music-playlist {
   flex: 1;
   overflow-y: auto;
@@ -613,7 +506,6 @@ watch(volume, (v) => { audio.volume = v })
   color: var(--color-text-muted);
 }
 
-/* 过渡动画 */
 .music-mini-fade-enter-active,
 .music-mini-fade-leave-active {
   transition: all 0.2s ease;
@@ -635,7 +527,6 @@ watch(volume, (v) => { audio.volume = v })
   transform: translateY(16px) scale(0.9);
 }
 
-/* 移动端适配 */
 @media (max-width: 768px) {
   .music-player {
     bottom: 16px;

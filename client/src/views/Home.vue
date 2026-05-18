@@ -6,6 +6,7 @@ import AnnouncementBar from '../components/AnnouncementBar.vue'
 import HomeMessages from '../components/HomeMessages.vue'
 import HomePostItem from '../components/HomePostItem.vue'
 import TypeWriter from '../components/TypeWriter.vue'
+import ProfileMusicPlayer from '../components/ProfileMusicPlayer.vue'
 import Calendar from '../components/Calendar.vue'
 import TimeProgress from '../components/TimeProgress.vue'
 import githubIcon from '../assets/github.svg'
@@ -222,6 +223,8 @@ onUnmounted(() => {
                 <span class="ps-label">{{ s.label }}</span>
               </div>
             </div>
+            <!-- 个人音乐播放器 -->
+            <ProfileMusicPlayer />
             <div v-if="siteInfo?.tech_stack?.length" class="profile-tech">
               <span
                 v-for="tech in siteInfo.tech_stack"
