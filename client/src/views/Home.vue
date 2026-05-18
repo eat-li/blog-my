@@ -138,32 +138,33 @@ function handleVisibility() {
 onMounted(async () => {
   const safeCall = (fn, fallback) => fn().catch(() => fallback)
 
-  const [latestRes, statsRes, heatmapRes, tagsRes, config] = await Promise.all([
+  // 关键优化：config 单独优先请求，让头像和站点信息尽快渲染（LCP 优化）
+  const config = await safeCall(configApi.getPublic, {})
+  siteInfo.value = config?.site_info || null
+  socialLinks.value = config?.social_links || {}
+
+  if (config?.site_info?.launch_date) {
+    startUptime(config.site_info.launch_date)
+    document.addEventListener('visibilitychange', handleVisibility)
+  }
+
+  const repoList = config?.github_config?.repos
+  if (repoList?.length) {
+    repos.value = repoList.slice(0, 6)
+  }
+
+  // 其余 API 并行请求（不阻塞头像渲染）
+  const [latestRes, statsRes, heatmapRes, tagsRes] = await Promise.all([
     safeCall(postApi.latest, { article: [], anime: [], galgame: [] }),
     safeCall(statsApi.profile, null),
     safeCall(postApi.heatmap, { heatmap: {} }),
     safeCall(tagApi.list, []),
-    safeCall(configApi.getPublic, {}),
   ])
 
   latest.value = latestRes || { article: [], anime: [], galgame: [] }
   stats.value = statsRes?.data || statsRes || null
   heatmap.value = heatmapRes?.heatmap || {}
   tags.value = (tagsRes?.tags || tagsRes || []).slice(0, 15)
-  siteInfo.value = config?.site_info || null
-  socialLinks.value = config?.social_links || {}
-
-  // 启动网站存活计时器
-  if (config?.site_info?.launch_date) {
-    startUptime(config.site_info.launch_date)
-    document.addEventListener('visibilitychange', handleVisibility)
-  }
-
-  // 从配置获取 GitHub 仓库
-  const repoList = config?.github_config?.repos
-  if (repoList?.length) {
-    repos.value = repoList.slice(0, 6)
-  }
 
   loading.value = false
 })
@@ -193,8 +194,13 @@ onUnmounted(() => {
         <section class="profile-card glass-card">
           <div class="profile-avatar">
             <div class="avatar-ring">
-              <img v-if="siteInfo?.avatar" :src="siteInfo.avatar" class="avatar-img" alt="avatar" />
-              <span v-else class="avatar-letter">E</span>
+              <img
+                :src="siteInfo?.avatar || ''"
+                class="avatar-img"
+                :class="{ 'avatar-img--hidden': !siteInfo?.avatar }"
+                alt="avatar"
+              />
+              <span v-if="!siteInfo?.avatar" class="avatar-letter">E</span>
             </div>
           </div>
           <div class="profile-body">
@@ -495,6 +501,11 @@ onUnmounted(() => {
   height: 100%;
   object-fit: cover;
   border-radius: 50%;
+}
+
+.avatar-img--hidden {
+  opacity: 0;
+  position: absolute;
 }
 
 .profile-body {

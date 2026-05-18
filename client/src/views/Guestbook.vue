@@ -160,7 +160,7 @@ const totalPages = () => Math.ceil(total.value / pageSize) || 1
             <div class="message-replies" v-if="msg.Messages?.length">
               <div v-for="reply in msg.Messages" :key="reply.id" class="reply-item">
                 <div class="reply-avatar" :class="{ 'reply-avatar--admin': reply.nickname === '博主' }">
-                  <img v-if="reply.nickname === '博主' && siteInfo?.avatar" :src="siteInfo.avatar" class="reply-avatar-img" alt="avatar" />
+                  <img v-if="reply.nickname === '博主' && siteInfo?.avatar" :src="siteInfo.avatar" class="reply-avatar-img" alt="avatar" loading="lazy" />
                   <span v-else class="avatar-text-sm">{{ reply.nickname.charAt(0).toUpperCase() }}</span>
                 </div>
                 <div class="reply-body">

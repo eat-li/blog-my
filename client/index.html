@@ -8,14 +8,9 @@
   <meta name="description" content="EatLi 的个人博客 — 记录技术、动漫与 Galgame 的点点滴滴" />
   <title>EatLi · blog</title>
 
-  <!-- 预连接 Google Fonts，加速字体加载 -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  
-  <!-- 异步加载字体（非阻塞），font-display: swap 避免白屏 -->
-  <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400&display=swap"
-    media="print" onload="this.media='all'" />
+  <!-- 使用系统字体栈，不依赖外部字体文件（国内 Google Fonts 不可达） -->
+  <!-- 预解析 OSS 域名，加速头像/图片加载 -->
+  <link rel="dns-prefetch" href="https://blog-saki.oss-cn-chengdu.aliyuncs.com" />
 </head>
 
 <body>

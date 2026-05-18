@@ -85,7 +85,7 @@ onMounted(async () => {
           </header>
 
           <div class="detail-cover" v-if="post.cover_image">
-            <img :src="post.cover_image" :alt="post.title" />
+            <img :src="post.cover_image" :alt="post.title" loading="lazy" />
           </div>
 
           <div ref="contentRef" class="detail-content prose" v-html="renderContent" />

@@ -516,6 +516,37 @@ img {
   .sidebar-nav {
     -webkit-overflow-scrolling: touch;
   }
+
+  /* ===== 移动端性能优化：禁用昂贵 CSS 属性 ===== */
+
+  /* 移动端去掉 backdrop-filter（47 处毛玻璃 → 半透明背景色） */
+  .glass-card,
+  .glass-btn,
+  .glass-input,
+  .tag-badge,
+  .type-badge {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(255, 250, 240, 0.95) !important;
+  }
+
+  /* 移动端禁用 body 渐变动画（静态背景即可） */
+  body::before {
+    animation: none !important;
+  }
+
+  /* 移动端隐藏 SVG 噪点纹理（昂贵的 feTurbulence 滤镜） */
+  body::after {
+    display: none !important;
+  }
+
+  /* 移动端禁用自定义光标（触摸屏无意义） */
+  body {
+    cursor: auto !important;
+  }
+  a, button, .glass-card, .glass-btn, [role="button"], input, select, textarea {
+    cursor: auto !important;
+  }
 }
 
 /* 极小屏 (iPhone SE 等) */
@@ -616,4 +647,15 @@ img {
 [data-theme="dark"] .prose pre {
   background: rgba(20, 17, 14, 0.92);
   border-color: rgba(255, 255, 255, 0.05);
+}
+
+/* 夜间模式 + 移动端：半透明背景色 */
+@media (max-width: 768px) {
+  [data-theme="dark"] .glass-card,
+  [data-theme="dark"] .glass-btn,
+  [data-theme="dark"] .glass-input,
+  [data-theme="dark"] .tag-badge,
+  [data-theme="dark"] .type-badge {
+    background: rgba(30, 25, 21, 0.95) !important;
+  }
 }

@@ -228,7 +228,7 @@ watch(volume, (v) => { audio.volume = v })
             :class="{ active: item.index === currentIndex }"
             @click="selectSong(item.index)"
           >
-            <img v-if="item.cover" :src="item.cover" :alt="item.title" class="music-playlist-cover" />
+            <img v-if="item.cover" :src="item.cover" :alt="item.title" class="music-playlist-cover" loading="lazy" />
             <span v-else class="music-playlist-index">
               {{ item.index === currentIndex ? (isPlaying ? '&#9835;' : '&#9632;') : item.index + 1 }}
             </span>

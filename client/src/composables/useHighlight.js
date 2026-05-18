@@ -83,7 +83,16 @@ function addCopyButton(pre) {
  * @param {import('vue').Ref<string|undefined>} [contentRef] - 可选，内容 HTML 的 ref，用于 watch 触发
  */
 export function useHighlight(containerRef, contentRef) {
+  // 按需加载 highlight.js 样式（首屏不需要时可节省 ~15KB）
+  let cssLoaded = false
+  function loadCSS() {
+    if (cssLoaded) return
+    cssLoaded = true
+    import('highlight.js/styles/github-dark.css')
+  }
+
   function highlight() {
+    loadCSS()
     nextTick(() => {
       const el = containerRef.value
       if (!el) return

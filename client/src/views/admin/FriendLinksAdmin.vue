@@ -237,7 +237,7 @@ function onAvatarError(e) {
     <!-- 列表 -->
     <div v-if="!loading || links.length" class="fla-list">
       <div v-for="link in links" :key="link.id" class="fla-card glass-card">
-        <img :src="link.avatar || ''" class="fla-avatar" @error="onAvatarError" />
+        <img :src="link.avatar || ''" class="fla-avatar" loading="lazy" @error="onAvatarError" />
         <div class="fla-info">
           <div class="fla-info-top">
             <span class="fla-nickname">{{ link.nickname }}</span>

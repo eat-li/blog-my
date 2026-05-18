@@ -24,6 +24,7 @@ function animateOrbs() {
     if (orb.x < -10 || orb.x > 110) orb.dx *= -1
     if (orb.y < -10 || orb.y > 110) orb.dy *= -1
   })
+  // 每帧更新位置
   rafId = requestAnimationFrame(animateOrbs)
 }
 
@@ -46,7 +47,7 @@ function onVisibilityChange() {
     titleTimer = setInterval(() => {
       titleIndex = (titleIndex + 1) % awayTitles.length
       document.title = awayTitles[titleIndex]
-    }, 2000)
+    }, 5000)
   } else {
     if (!rafId) animateOrbs()
     // 恢复原标题

@@ -14,10 +14,14 @@ onMounted(() => {
   sessionStorage.setItem('entry_loaded', '1')
   visible.value = true
 
-  // 入场 → 停留 → 退场
-  setTimeout(() => { phase.value = 'hold' }, 400)
-  setTimeout(() => { phase.value = 'leave' }, 3000)
-  setTimeout(() => { visible.value = false }, 2400)
+  // 入场 → 停留 → 退场（移动端缩短至 1 秒内）
+  const isMobile = window.innerWidth < 768
+  const holdDelay = isMobile ? 400 : 800
+  const leaveDelay = isMobile ? 600 : 1600
+  const hideDelay = isMobile ? 500 : 1200
+  setTimeout(() => { phase.value = 'hold' }, 300)
+  setTimeout(() => { phase.value = 'leave' }, holdDelay + leaveDelay)
+  setTimeout(() => { visible.value = false }, holdDelay + hideDelay)
 })
 </script>
 

@@ -71,10 +71,10 @@ onMounted(async () => {
             <span class="info-label" v-if="metadata.game_name">🎮 游戏名</span>
             <span class="info-value" v-if="metadata.game_name">{{ metadata.game_name }}</span>
           </div>
-          <div class="info-card-row" v-if="post.rating">
+          <!-- <div class="info-card-row" v-if="post.rating">
             <span class="info-label">⭐ 评分</span>
             <span class="info-value rating-stars">{{ starRating(post.rating) }} {{ post.rating }}/10</span>
-          </div>
+          </div> -->
           <div class="info-card-row" v-if="metadata.developer">
             <span class="info-label">🏢 开发商</span>
             <span class="info-value">{{ metadata.developer }}</span>
@@ -102,7 +102,7 @@ onMounted(async () => {
         </div>
 
         <div class="detail-cover" v-if="post.cover_image">
-          <img :src="post.cover_image" :alt="post.title" />
+          <img :src="post.cover_image" :alt="post.title" loading="lazy" />
         </div>
 
         <div ref="contentRef" class="detail-content prose" v-html="post.content" />
